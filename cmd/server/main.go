@@ -27,7 +27,7 @@ func main() {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			logger.Debug("failed to accept connection", err)
+			logger.Debug("failed to accept connection" + err.Error())
 		}
 		go handleConnection(conn, logger)
 	}

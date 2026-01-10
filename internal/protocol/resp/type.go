@@ -22,19 +22,40 @@ type Value struct {
 	Null  bool
 }
 
-// AsArray returns the value as an array
-func (v Value) AsArray() ([]Value, error) {
-	if v.Type != TypeArray {
-		return nil, fmt.Errorf("value is not an array, got type: %c", v.Type)
+func (v *Value) IsString() bool {
+	return v.Type == TypeSimpleString
+}
+
+func (v *Value) AsString() (string, error) {
+	if v.Type != TypeSimpleString {
+		return "", fmt.Errorf("value is not a string, got type: %c", v.Type)
 	}
 	if v.Null {
-		return nil, fmt.Errorf("null array")
+		return "", fmt.Errorf("null string")
 	}
-	return v.Array, nil
+	return v.Str, nil
+}
+
+func (v *Value) IsNumber() bool {
+	return v.Type == TypeInteger
+}
+
+func (v *Value) AsNumber() (int64, error) {
+	if v.Type != TypeInteger {
+		return 0, fmt.Errorf("value is not a number, got type: %c", v.Type)
+	}
+	if v.Null {
+		return 0, fmt.Errorf("null number")
+	}
+	return v.Num, nil
+}
+
+func (v *Value) IsBulk() bool {
+	return v.Type == TypeBulkString
 }
 
 // AsBulk returns the value as a byte array
-func (v Value) AsBulk() ([]byte, error) {
+func (v *Value) AsBulk() ([]byte, error) {
 	if v.Type != TypeBulkString {
 		return nil, fmt.Errorf("value is not a bulk string, got type: %c", v.Type)
 	}
@@ -42,6 +63,21 @@ func (v Value) AsBulk() ([]byte, error) {
 		return nil, fmt.Errorf("null bulk string")
 	}
 	return v.Bulk, nil
+}
+
+func (v *Value) IsArray() bool {
+	return v.Type == TypeArray
+}
+
+// AsArray returns the value as an array
+func (v *Value) AsArray() ([]Value, error) {
+	if v.Type != TypeArray {
+		return nil, fmt.Errorf("value is not an array, got type: %c", v.Type)
+	}
+	if v.Null {
+		return nil, fmt.Errorf("null array")
+	}
+	return v.Array, nil
 }
 
 // NewSimpleString creates a simple string value
