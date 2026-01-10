@@ -1,6 +1,7 @@
 package resp
 
 import (
+	"avacado/internal/protocol"
 	"bufio"
 	"fmt"
 	"io"
@@ -18,7 +19,7 @@ func (p *Parser) Parse() (Value, error) {
 	if err != nil {
 		return Value{}, err
 	}
-	switch Type(typeByte) {
+	switch typeByte {
 	case TypeSimpleString:
 		return p.parseSimpleString()
 	case TypeError:
@@ -173,4 +174,44 @@ func (p *Parser) parseArray() (Value, error) {
 // NewParser creates a new buffered io based parser from the given io reader
 func NewParser(r io.Reader) *Parser {
 	return &Parser{reader: bufio.NewReader(r)}
+}
+
+// CommandParser implements a parser for RESP commands
+type CommandParser struct {
+}
+
+// NewCommandParser creates a new command parser
+func NewCommandParser() *CommandParser {
+	return &CommandParser{}
+}
+
+// Parse parses a RESP command from the given io reader
+func (c *CommandParser) Parse(r io.Reader) (*protocol.Message, error) {
+	parser := NewParser(r)
+	value, err := parser.Parse()
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse command: %w", err)
+	}
+	array, err := value.AsArray()
+	if err != nil {
+		return nil, fmt.Errorf("command is not an array: %w", err)
+	}
+	if len(array) == 0 {
+		return nil, fmt.Errorf("command is empty")
+	}
+
+	cmdBytes, err := array[0].AsBulk()
+	if err != nil {
+		return nil, fmt.Errorf("command name is not a bulk string: %w", err)
+	}
+	command := string(cmdBytes)
+	args := make([][]byte, len(array)-1)
+	for i := 1; i < len(array); i++ {
+		arg, err := array[i].AsBulk()
+		if err != nil {
+			return nil, fmt.Errorf("argument %d is not a bulk string: %w", i, err)
+		}
+		args[i-1] = arg
+	}
+	return &protocol.Message{Command: command, Args: args}, nil
 }
