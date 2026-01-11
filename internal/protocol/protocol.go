@@ -7,14 +7,13 @@ type Parser interface {
 	Parse(r io.Reader) (*Message, error)
 }
 
-type ValueType string
+type ValueType byte
 
 const (
-	String ValueType = "string"
-	Bytes            = "bytes"
-	Number           = "number"
-	Array            = "array"
-	Null             = "null"
+	TypeSimpleString ValueType = '+'
+	TypeBulkString             = '$'
+	TypeNumber                 = ':'
+	TypeArray                  = '*'
 )
 
 // Value represent a protocol value
@@ -28,19 +27,19 @@ type Value struct {
 }
 
 func NewStringProtocolValue(s string) Value {
-	return Value{Type: String, Str: s}
+	return Value{Type: TypeSimpleString, Str: s}
 }
 
-func NewBytesProtocolValue(b []byte) Value {
-	return Value{Type: Bytes, Bytes: b}
+func NewBulkStringProtocolValue(b []byte) Value {
+	return Value{Type: TypeBulkString, Bytes: b}
 }
 
 func NewNumberProtocolValue(n int64) Value {
-	return Value{Type: Number, Number: n}
+	return Value{Type: TypeNumber, Number: n}
 }
 
 func NewArrayProtocolValue(values []Value) Value {
-	return Value{Type: Array, Array: values}
+	return Value{Type: TypeArray, Array: values}
 }
 
 // Message represents a protocol message, containing command name and args
@@ -49,9 +48,20 @@ type Message struct {
 	Args    []Value
 }
 
+// Response represents a protocol response
+type Response struct {
+	Value Value
+	Err   error
+}
+
+// NewSuccessResponse creates a new success response
+func NewSuccessResponse(value Value) *Response {
+	return &Response{Value: value}
+}
+
 // Serializer serializes the protocol message
 type Serializer interface {
-	Serialize(value interface{}) ([]byte, error)
+	Serialize(value *Response) ([]byte, error)
 	SerializeError(e error) []byte
 }
 

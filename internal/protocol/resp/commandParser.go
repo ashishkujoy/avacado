@@ -1,7 +1,7 @@
-package protocol
+package resp
 
 import (
-	"avacado/internal/protocol/resp"
+	"avacado/internal/protocol"
 	"fmt"
 	"io"
 )
@@ -11,62 +11,62 @@ type RESPCommandParser struct {
 }
 
 // toProtocolValue converts resp value to protocol value
-func toProtocolValue(value resp.Value) (Value, error) {
+func toProtocolValue(value Value) (protocol.Value, error) {
 	switch {
 	case value.IsString():
 		{
 			str, err := value.AsString()
 			if err != nil {
-				return Value{}, err
+				return protocol.Value{}, err
 			}
-			return NewStringProtocolValue(str), nil
+			return protocol.NewStringProtocolValue(str), nil
 		}
 	case value.IsNumber():
 		{
 			num, err := value.AsNumber()
 			if err != nil {
-				return Value{}, err
+				return protocol.Value{}, err
 			}
-			return NewNumberProtocolValue(num), nil
+			return protocol.NewNumberProtocolValue(num), nil
 		}
 	case value.IsNumber():
 		{
 			num, err := value.AsNumber()
 			if err != nil {
-				return Value{}, err
+				return protocol.Value{}, err
 			}
-			return NewNumberProtocolValue(num), nil
+			return protocol.NewNumberProtocolValue(num), nil
 		}
 	case value.IsBulk():
 		{
 			bulk, err := value.AsBulk()
 			if err != nil {
-				return Value{}, err
+				return protocol.Value{}, err
 			}
-			return NewBytesProtocolValue(bulk), nil
+			return protocol.NewBulkStringProtocolValue(bulk), nil
 		}
 	case value.IsArray():
 		{
 			array, err := value.AsArray()
 			if err != nil {
-				return Value{}, err
+				return protocol.Value{}, err
 			}
-			values := make([]Value, len(array))
+			values := make([]protocol.Value, len(array))
 			for i := 0; i < len(array); i++ {
 				values[i], err = toProtocolValue(array[i])
 				if err != nil {
-					return Value{}, err
+					return protocol.Value{}, err
 				}
 			}
-			return NewArrayProtocolValue(values), nil
+			return protocol.NewArrayProtocolValue(values), nil
 		}
 	}
-	return Value{}, fmt.Errorf("unreachable")
+	return protocol.Value{}, fmt.Errorf("unreachable")
 }
 
 // Parse parses a RESP command from the given io reader
-func (c *RESPCommandParser) Parse(r io.Reader) (*Message, error) {
-	parser := resp.NewParser(r)
+func (c *RESPCommandParser) Parse(r io.Reader) (*protocol.Message, error) {
+	parser := NewParser(r)
 	value, err := parser.Parse()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse command: %w", err)
@@ -84,12 +84,12 @@ func (c *RESPCommandParser) Parse(r io.Reader) (*Message, error) {
 		return nil, fmt.Errorf("command name is not a bulk string: %w", err)
 	}
 	command := string(cmdBytes)
-	args := make([]Value, len(array)-1)
+	args := make([]protocol.Value, len(array)-1)
 	for i := 1; i < len(array); i++ {
 		args[i-1], err = toProtocolValue(array[i])
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse command argument: %w", err)
 		}
 	}
-	return &Message{Command: command, Args: args}, nil
+	return &protocol.Message{Command: command, Args: args}, nil
 }
