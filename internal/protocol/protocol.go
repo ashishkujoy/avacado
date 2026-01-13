@@ -1,6 +1,9 @@
 package protocol
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 // Parser parses the protocol message
 type Parser interface {
@@ -24,6 +27,26 @@ type Value struct {
 	Number int64
 	Array  []Value
 	Null   bool
+}
+
+func (v *Value) AsString() (string, error) {
+	if v.Type == TypeSimpleString {
+		return v.Str, nil
+	}
+	if v.Type == TypeBulkString {
+		return string(v.Bytes), nil
+	}
+	return "", fmt.Errorf("value is not a string")
+}
+
+func (v *Value) AsBytes() ([]byte, error) {
+	if v.Type == TypeSimpleString {
+		return []byte(v.Str), nil
+	}
+	if v.Type == TypeBulkString {
+		return v.Bytes, nil
+	}
+	return nil, fmt.Errorf("value is not bytes")
 }
 
 func NewStringProtocolValue(s string) Value {
@@ -68,4 +91,16 @@ type Serializer interface {
 type Protocol interface {
 	Serializer
 	Parser
+}
+
+func NewSimpleStringResponse(s string) *Response {
+	return NewSuccessResponse(NewStringProtocolValue(s))
+}
+
+func NewNullBulkString() *Response {
+	return NewSuccessResponse(NewNullBulkStringProtocolValue())
+}
+
+func NewNullBulkStringProtocolValue() Value {
+	return Value{Null: true, Type: TypeBulkString}
 }

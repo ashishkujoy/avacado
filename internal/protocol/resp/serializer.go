@@ -37,7 +37,7 @@ func (s *Serializer) writeValue(buf *bytes.Buffer, value protocol.Value) error {
 	case protocol.TypeSimpleString:
 		return s.writeSimpleString(buf, value.Str)
 	case protocol.TypeBulkString:
-		return s.writeBulkString(buf, value.Bytes)
+		return s.writeBulkString(buf, value.Bytes, value.Null)
 	case protocol.TypeNumber:
 		return s.writeNumber(buf, value.Number)
 	case protocol.TypeArray:
@@ -53,8 +53,13 @@ func (s *Serializer) writeSimpleString(buf *bytes.Buffer, str string) error {
 	return nil
 }
 
-func (s *Serializer) writeBulkString(buf *bytes.Buffer, str []byte) error {
+func (s *Serializer) writeBulkString(buf *bytes.Buffer, str []byte, isNull bool) error {
 	buf.WriteByte(TypeBulkString)
+	if isNull {
+		buf.WriteString("-1")
+		buf.WriteString(newLineCarriageReturn)
+		return nil
+	}
 	buf.WriteString(strconv.FormatInt(int64(len(str)), 10))
 	buf.WriteString(newLineCarriageReturn)
 	buf.Write(str)
