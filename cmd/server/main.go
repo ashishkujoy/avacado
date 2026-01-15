@@ -2,10 +2,10 @@ package main
 
 import (
 	"avacado/internal/observability"
-	"bufio"
+	"avacado/internal/protocol/resp"
+	"avacado/internal/server"
 	"flag"
 	"fmt"
-	"log/slog"
 	"net"
 	"os"
 )
@@ -18,6 +18,7 @@ func main() {
 		Level:  0,
 		Format: "json",
 	})
+	s := server.NewServer(resp.NewRespProtocol())
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		logger.Error("failed to listen on port", "port", port, "error", err.Error())
@@ -29,17 +30,6 @@ func main() {
 		if err != nil {
 			logger.Debug("failed to accept connection" + err.Error())
 		}
-		go handleConnection(conn, logger)
+		go s.Serve(conn, logger)
 	}
-}
-
-func handleConnection(conn net.Conn, logger *slog.Logger) {
-	defer conn.Close()
-	reader := bufio.NewReader(conn)
-	bytes, err := reader.ReadBytes('\n')
-	if err != nil {
-		logger.Error("failed to read bytes from connection", "error", err.Error())
-		return
-	}
-	_, _ = bufio.NewWriter(conn).Write(bytes)
 }

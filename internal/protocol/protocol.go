@@ -82,12 +82,18 @@ func NewSuccessResponse(value Value) *Response {
 	return &Response{Value: value}
 }
 
+// NewErrorResponse creates a new error response
+func NewErrorResponse(err error) *Response {
+	return &Response{Err: err}
+}
+
 // Serializer serializes the protocol message
 type Serializer interface {
 	Serialize(value *Response) ([]byte, error)
 	SerializeError(e error) []byte
 }
 
+//go:generate mockgen -source=protocol.go -destination=mocks/protocol.go -package=mockprotocol
 type Protocol interface {
 	Serializer
 	Parser

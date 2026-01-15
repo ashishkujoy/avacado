@@ -7,13 +7,17 @@ import (
 )
 
 // Command represent a redis command.
+//
+//go:generate mockgen -source=command.go -destination=mocks/command.go -package=mockscommand
 type Command interface {
 	Execute(ctx context.Context, storage storage.Storage) *protocol.Response
 }
 
 // Parser parses a raw message to a redis command
+//
+//go:generate mockgen -source=command.go -destination=mocks/command.go -package=mockscommand
 type Parser interface {
-	Parse(msg protocol.Message) (Command, error)
+	Parse(msg *protocol.Message) (Command, error)
 	Name() string
 }
 
