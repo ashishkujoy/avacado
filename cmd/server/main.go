@@ -1,9 +1,11 @@
 package main
 
 import (
+	"avacado/internal/command/registry"
 	"avacado/internal/observability"
 	"avacado/internal/protocol/resp"
 	"avacado/internal/server"
+	"avacado/internal/storage"
 	"flag"
 	"fmt"
 	"net"
@@ -18,7 +20,11 @@ func main() {
 		Level:  0,
 		Format: "json",
 	})
-	s := server.NewServer(resp.NewRespProtocol())
+	s := server.NewServer(
+		resp.NewRespProtocol(),
+		registry.SetupDefaultParserRegistry(),
+		storage.NewDefaultStorage(),
+	)
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		logger.Error("failed to listen on port", "port", port, "error", err.Error())

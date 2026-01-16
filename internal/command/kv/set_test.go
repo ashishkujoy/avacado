@@ -13,7 +13,7 @@ import (
 )
 
 func TestSetParser_Parse(t *testing.T) {
-	msg := protocol.Message{
+	msg := &protocol.Message{
 		Command: "SET",
 		Args: []protocol.Value{
 			{

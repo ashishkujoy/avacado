@@ -30,7 +30,7 @@ func NewSetParser() SetParser {
 	return SetParser{}
 }
 
-func (s *SetParser) Parse(msg *protocol.Message) (command.Command, error) {
+func (s SetParser) Parse(msg *protocol.Message) (command.Command, error) {
 	key, err := msg.Args[0].AsString()
 	if err != nil {
 		return nil, fmt.Errorf("set command failed to parse key: %w", err)
@@ -42,6 +42,6 @@ func (s *SetParser) Parse(msg *protocol.Message) (command.Command, error) {
 	return &Set{Key: key, Value: value}, nil
 }
 
-func (s *SetParser) Name() string {
+func (s SetParser) Name() string {
 	return "SET"
 }

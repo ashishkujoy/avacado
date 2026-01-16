@@ -12,12 +12,16 @@ import (
 // Server handles the io connections
 type Server struct {
 	protocol protocol.Protocol
-	parser   command.Parser
+	parser   command.ParserRegistry
 	storage  storage.Storage
 }
 
 // NewServer creates a new server
-func NewServer(protocol protocol.Protocol, parser command.Parser, storage storage.Storage) *Server {
+func NewServer(
+	protocol protocol.Protocol,
+	parser command.ParserRegistry,
+	storage storage.Storage,
+) *Server {
 	return &Server{
 		protocol: protocol,
 		parser:   parser,
