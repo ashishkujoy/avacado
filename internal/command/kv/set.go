@@ -17,7 +17,7 @@ type Set struct {
 func (s *Set) Execute(ctx context.Context, storage storage.Storage) *protocol.Response {
 	err := storage.KV().Set(ctx, s.Key, s.Value)
 	if err != nil {
-		return protocol.NewNullBulkString()
+		return protocol.NewNullBulkStringResponse()
 	}
 	return protocol.NewSimpleStringResponse("OK")
 }

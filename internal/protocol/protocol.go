@@ -103,8 +103,12 @@ func NewSimpleStringResponse(s string) *Response {
 	return NewSuccessResponse(NewStringProtocolValue(s))
 }
 
-func NewNullBulkString() *Response {
+func NewNullBulkStringResponse() *Response {
 	return NewSuccessResponse(NewNullBulkStringProtocolValue())
+}
+
+func NewBulkStringResponse(b []byte) *Response {
+	return NewSuccessResponse(NewBulkStringProtocolValue(b))
 }
 
 func NewNullBulkStringProtocolValue() Value {

@@ -66,5 +66,5 @@ func TestSet_ExecuteWithError(t *testing.T) {
 		Value: value,
 	}
 	response := command.Execute(ctx, storage)
-	assert.Equal(t, protocol.NewNullBulkString(), response)
+	assert.Equal(t, protocol.NewNullBulkStringResponse(), response)
 }
