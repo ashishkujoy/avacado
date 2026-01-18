@@ -6,12 +6,14 @@ import (
 	"avacado/internal/storage"
 	"context"
 	"fmt"
+	"strings"
 )
 
 // Set represent a set command containing key and value as arguments
 type Set struct {
 	Key   string
 	Value []byte
+	NX    bool
 }
 
 func (s *Set) Execute(ctx context.Context, storage storage.Storage) *protocol.Response {
@@ -39,7 +41,13 @@ func (s SetParser) Parse(msg *protocol.Message) (command.Command, error) {
 	if err != nil {
 		return nil, fmt.Errorf("set command failed to parse value: %w", err)
 	}
-	return &Set{Key: key, Value: value}, nil
+	cmd := &Set{Key: key, Value: value}
+	if len(msg.Args) > 2 {
+		if nx, err := msg.Args[2].AsString(); err == nil {
+			cmd.NX = strings.ToUpper(nx) == "NX"
+		}
+	}
+	return cmd, nil
 }
 
 func (s SetParser) Name() string {
