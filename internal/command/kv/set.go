@@ -12,14 +12,13 @@ import (
 
 // Set represent a set command containing key and value as arguments
 type Set struct {
-	Key   string
-	Value []byte
-	NX    bool
-	XX    bool
+	Key     string
+	Value   []byte
+	Options *kv.SetOptions
 }
 
 func (s *Set) Execute(ctx context.Context, storage storage.Storage) *protocol.Response {
-	err := storage.KV().Set(ctx, s.Key, s.Value, &kv.SetOptions{NX: s.NX})
+	err := storage.KV().Set(ctx, s.Key, s.Value, s.Options)
 	if err != nil {
 		return protocol.NewNullBulkStringResponse()
 	}
@@ -44,17 +43,19 @@ func (s SetParser) Parse(msg *protocol.Message) (command.Command, error) {
 		return nil, fmt.Errorf("set command failed to parse value: %w", err)
 	}
 	cmd := &Set{Key: key, Value: value}
+	options := kv.NewSetOptions()
 	for _, arg := range msg.Args[2:] {
 		argName, _ := arg.AsString()
 		argName = strings.ToUpper(argName)
 		if argName == "NX" {
-			cmd.NX = true
+			options = options.WithNX()
 		}
 		if argName == "XX" {
-			cmd.XX = true
+			options = options.WithXX()
 		}
 		// TODO: error handling for unknown arg
 	}
+	cmd.Options = options
 	return cmd, nil
 }
 

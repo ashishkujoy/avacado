@@ -14,8 +14,9 @@ func TestKVMemoryStore_GetAndSet(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Nil(t, value)
+	options := kv.NewSetOptions()
 
-	err = store.Set(context.Background(), "key1", []byte("value1"), kv.NewSetOptions(false, true))
+	err = store.Set(context.Background(), "key1", []byte("value1"), options)
 
 	assert.NoError(t, err)
 
@@ -27,21 +28,24 @@ func TestKVMemoryStore_GetAndSet(t *testing.T) {
 
 func TestKVMemoryStore_SetExistingKeyWithNXOptionEnabled(t *testing.T) {
 	store := NewKVMemoryStore()
+	options := kv.NewSetOptions()
+	options.WithNX()
 
-	err := store.Set(context.Background(), "key1", []byte("value1"), kv.NewSetOptions(true, false))
+	err := store.Set(context.Background(), "key1", []byte("value1"), options)
 	assert.NoError(t, err)
 
-	err = store.Set(context.Background(), "key1", []byte("value2"), kv.NewSetOptions(true, false))
+	err = store.Set(context.Background(), "key1", []byte("value2"), options)
 	assert.Error(t, err, NewKeyAlreadyExistsError("key1"))
 }
 
 func TestKVMemoryStore_SetExistingKeyWithNXOptionDisabled(t *testing.T) {
 	store := NewKVMemoryStore()
+	option := kv.NewSetOptions()
 
-	err := store.Set(context.Background(), "key1", []byte("value1"), kv.NewSetOptions(false, false))
+	err := store.Set(context.Background(), "key1", []byte("value1"), option)
 	assert.NoError(t, err)
 
-	err = store.Set(context.Background(), "key1", []byte("value2"), kv.NewSetOptions(false, false))
+	err = store.Set(context.Background(), "key1", []byte("value2"), option)
 	assert.NoError(t, err)
 
 	value, _ := store.Get(context.Background(), "key1")
@@ -50,14 +54,16 @@ func TestKVMemoryStore_SetExistingKeyWithNXOptionDisabled(t *testing.T) {
 
 func TestKVMemoryStore_SetWithXXEnabled(t *testing.T) {
 	store := NewKVMemoryStore()
+	optionWithXX := kv.NewSetOptions()
+	optionWithXX.WithXX()
 
-	err := store.Set(context.Background(), "key1", []byte("value1"), kv.NewSetOptions(false, true))
+	err := store.Set(context.Background(), "key1", []byte("value1"), optionWithXX)
 	assert.Error(t, err)
 
-	err = store.Set(context.Background(), "key1", []byte("value2"), kv.NewSetOptions(false, false))
+	err = store.Set(context.Background(), "key1", []byte("value2"), kv.NewSetOptions())
 	assert.NoError(t, err)
 
-	err = store.Set(context.Background(), "key1", []byte("value3"), kv.NewSetOptions(false, true))
+	err = store.Set(context.Background(), "key1", []byte("value3"), optionWithXX)
 	assert.NoError(t, err)
 
 	value, _ := store.Get(context.Background(), "key1")

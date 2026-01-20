@@ -14,8 +14,18 @@ type SetOptions struct {
 	XX bool
 }
 
-func NewSetOptions(nx bool, xx bool) *SetOptions {
-	return &SetOptions{NX: nx, XX: xx}
+func NewSetOptions() *SetOptions {
+	return &SetOptions{}
+}
+
+func (s *SetOptions) WithNX() *SetOptions {
+	s.NX = true
+	return s
+}
+
+func (s *SetOptions) WithXX() *SetOptions {
+	s.XX = true
+	return s
 }
 
 //go:generate mockgen -source=store.go -destination=mocks/store.go -package=mockkv

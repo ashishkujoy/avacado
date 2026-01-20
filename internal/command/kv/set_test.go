@@ -56,7 +56,7 @@ func TestSetParser_WithNXOption(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "key", (*command.(*Set)).Key)
 	assert.Equal(t, "value", string((*command.(*Set)).Value))
-	assert.True(t, (*command.(*Set)).NX)
+	assert.True(t, (*command.(*Set)).Options.NX)
 }
 
 func TestSetParser_WithXXOption(t *testing.T) {
@@ -82,7 +82,7 @@ func TestSetParser_WithXXOption(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "key", (*command.(*Set)).Key)
 	assert.Equal(t, "value", string((*command.(*Set)).Value))
-	assert.True(t, (*command.(*Set)).XX)
+	assert.True(t, (*command.(*Set)).Options.XX)
 }
 
 func TestSet_ExecuteSuccessfully(t *testing.T) {
