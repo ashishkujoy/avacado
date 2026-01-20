@@ -4,6 +4,7 @@ import (
 	"avacado/internal/command"
 	"avacado/internal/protocol"
 	"avacado/internal/storage"
+	"avacado/internal/storage/kv"
 	"context"
 	"fmt"
 	"strings"
@@ -17,7 +18,7 @@ type Set struct {
 }
 
 func (s *Set) Execute(ctx context.Context, storage storage.Storage) *protocol.Response {
-	err := storage.KV().Set(ctx, s.Key, s.Value)
+	err := storage.KV().Set(ctx, s.Key, s.Value, &kv.SetOptions{NX: s.NX})
 	if err != nil {
 		return protocol.NewNullBulkStringResponse()
 	}
