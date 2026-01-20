@@ -22,8 +22,12 @@ func NewKVMemoryStore() *KVMemoryStore {
 func (k *KVMemoryStore) Set(_ context.Context, key string, value []byte, options *kv.SetOptions) error {
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	if _, keyAlreadyExists := k.store[key]; keyAlreadyExists && options.NX {
+	_, keyAlreadyExists := k.store[key]
+	if keyAlreadyExists && options.NX {
 		return NewKeyAlreadyExistsError(key)
+	}
+	if !keyAlreadyExists && options.XX {
+		return NewKeyNotPresentError(key)
 	}
 	k.store[key] = value
 	return nil
@@ -37,4 +41,8 @@ func (k *KVMemoryStore) Get(_ context.Context, key string) ([]byte, error) {
 
 func NewKeyAlreadyExistsError(key string) error {
 	return fmt.Errorf("set operation failed: key = %s, %s", key, kv.KeyAlreadyExistsErrorType)
+}
+
+func NewKeyNotPresentError(key string) error {
+	return fmt.Errorf("set operation failed: key = %s, %s", key, kv.KeyNotPresentErrorType)
 }

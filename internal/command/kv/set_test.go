@@ -59,6 +59,32 @@ func TestSetParser_WithNXOption(t *testing.T) {
 	assert.True(t, (*command.(*Set)).NX)
 }
 
+func TestSetParser_WithXXOption(t *testing.T) {
+	msg := &protocol.Message{
+		Command: "SET",
+		Args: []protocol.Value{
+			{
+				Type:  protocol.TypeBulkString,
+				Bytes: []byte("key"),
+			},
+			{
+				Type:  protocol.TypeBulkString,
+				Bytes: []byte("value"),
+			},
+			{
+				Type:  protocol.TypeBulkString,
+				Bytes: []byte("XX"),
+			},
+		},
+	}
+	parser := NewSetParser()
+	command, err := parser.Parse(msg)
+	assert.NoError(t, err)
+	assert.Equal(t, "key", (*command.(*Set)).Key)
+	assert.Equal(t, "value", string((*command.(*Set)).Value))
+	assert.True(t, (*command.(*Set)).XX)
+}
+
 func TestSet_ExecuteSuccessfully(t *testing.T) {
 	controller := gomock.NewController(t)
 	storage := mocksstorage.NewMockStorage(controller)

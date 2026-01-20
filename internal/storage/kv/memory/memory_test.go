@@ -15,7 +15,7 @@ func TestKVMemoryStore_GetAndSet(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, value)
 
-	err = store.Set(context.Background(), "key1", []byte("value1"), kv.NewSetOptions(false))
+	err = store.Set(context.Background(), "key1", []byte("value1"), kv.NewSetOptions(false, true))
 
 	assert.NoError(t, err)
 
@@ -28,22 +28,38 @@ func TestKVMemoryStore_GetAndSet(t *testing.T) {
 func TestKVMemoryStore_SetExistingKeyWithNXOptionEnabled(t *testing.T) {
 	store := NewKVMemoryStore()
 
-	err := store.Set(context.Background(), "key1", []byte("value1"), kv.NewSetOptions(true))
+	err := store.Set(context.Background(), "key1", []byte("value1"), kv.NewSetOptions(true, false))
 	assert.NoError(t, err)
 
-	err = store.Set(context.Background(), "key1", []byte("value2"), kv.NewSetOptions(true))
+	err = store.Set(context.Background(), "key1", []byte("value2"), kv.NewSetOptions(true, false))
 	assert.Error(t, err, NewKeyAlreadyExistsError("key1"))
 }
 
 func TestKVMemoryStore_SetExistingKeyWithNXOptionDisabled(t *testing.T) {
 	store := NewKVMemoryStore()
 
-	err := store.Set(context.Background(), "key1", []byte("value1"), kv.NewSetOptions(false))
+	err := store.Set(context.Background(), "key1", []byte("value1"), kv.NewSetOptions(false, false))
 	assert.NoError(t, err)
 
-	err = store.Set(context.Background(), "key1", []byte("value2"), kv.NewSetOptions(false))
+	err = store.Set(context.Background(), "key1", []byte("value2"), kv.NewSetOptions(false, false))
 	assert.NoError(t, err)
 
 	value, _ := store.Get(context.Background(), "key1")
 	assert.Equal(t, "value2", string(value))
+}
+
+func TestKVMemoryStore_SetWithXXEnabled(t *testing.T) {
+	store := NewKVMemoryStore()
+
+	err := store.Set(context.Background(), "key1", []byte("value1"), kv.NewSetOptions(false, true))
+	assert.Error(t, err)
+
+	err = store.Set(context.Background(), "key1", []byte("value2"), kv.NewSetOptions(false, false))
+	assert.NoError(t, err)
+
+	err = store.Set(context.Background(), "key1", []byte("value3"), kv.NewSetOptions(false, true))
+	assert.NoError(t, err)
+
+	value, _ := store.Get(context.Background(), "key1")
+	assert.Equal(t, "value3", string(value))
 }

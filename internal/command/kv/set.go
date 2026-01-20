@@ -15,6 +15,7 @@ type Set struct {
 	Key   string
 	Value []byte
 	NX    bool
+	XX    bool
 }
 
 func (s *Set) Execute(ctx context.Context, storage storage.Storage) *protocol.Response {
@@ -43,10 +44,16 @@ func (s SetParser) Parse(msg *protocol.Message) (command.Command, error) {
 		return nil, fmt.Errorf("set command failed to parse value: %w", err)
 	}
 	cmd := &Set{Key: key, Value: value}
-	if len(msg.Args) > 2 {
-		if nx, err := msg.Args[2].AsString(); err == nil {
-			cmd.NX = strings.ToUpper(nx) == "NX"
+	for _, arg := range msg.Args[2:] {
+		argName, _ := arg.AsString()
+		argName = strings.ToUpper(argName)
+		if argName == "NX" {
+			cmd.NX = true
 		}
+		if argName == "XX" {
+			cmd.XX = true
+		}
+		// TODO: error handling for unknown arg
 	}
 	return cmd, nil
 }
