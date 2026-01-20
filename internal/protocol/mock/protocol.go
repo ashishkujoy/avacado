@@ -41,7 +41,7 @@ func (m *MockParser) EXPECT() *MockParserMockRecorder {
 	return m.recorder
 }
 
-// Parse mock base method.
+// Parse mocks base method.
 func (m *MockParser) Parse(r io.Reader) (*protocol.Message, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Parse", r)
@@ -80,7 +80,7 @@ func (m *MockSerializer) EXPECT() *MockSerializerMockRecorder {
 	return m.recorder
 }
 
-// Serialize mock base method.
+// Serialize mocks base method.
 func (m *MockSerializer) Serialize(value *protocol.Response) ([]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Serialize", value)
@@ -95,7 +95,7 @@ func (mr *MockSerializerMockRecorder) Serialize(value any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serialize", reflect.TypeOf((*MockSerializer)(nil).Serialize), value)
 }
 
-// SerializeError mock base method.
+// SerializeError mocks base method.
 func (m *MockSerializer) SerializeError(e error) []byte {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SerializeError", e)
@@ -133,7 +133,7 @@ func (m *MockProtocol) EXPECT() *MockProtocolMockRecorder {
 	return m.recorder
 }
 
-// Parse mock base method.
+// Parse mocks base method.
 func (m *MockProtocol) Parse(r io.Reader) (*protocol.Message, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Parse", r)
@@ -148,7 +148,7 @@ func (mr *MockProtocolMockRecorder) Parse(r any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parse", reflect.TypeOf((*MockProtocol)(nil).Parse), r)
 }
 
-// Serialize mock base method.
+// Serialize mocks base method.
 func (m *MockProtocol) Serialize(value *protocol.Response) ([]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Serialize", value)
@@ -163,7 +163,7 @@ func (mr *MockProtocolMockRecorder) Serialize(value any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Serialize", reflect.TypeOf((*MockProtocol)(nil).Serialize), value)
 }
 
-// SerializeError mock base method.
+// SerializeError mocks base method.
 func (m *MockProtocol) SerializeError(e error) []byte {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SerializeError", e)

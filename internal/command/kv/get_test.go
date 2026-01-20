@@ -2,8 +2,8 @@ package kv
 
 import (
 	"avacado/internal/protocol"
-	mockkv "avacado/internal/storage/kv/mocks"
-	mocksstorage "avacado/internal/storage/mocks"
+	mockkv "avacado/internal/storage/kv/mock"
+	mocksstorage "avacado/internal/storage/mock"
 	"context"
 	"fmt"
 	"testing"

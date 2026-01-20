@@ -22,3 +22,7 @@ func NewLogger(config LoggerConfig) *slog.Logger {
 	}
 	return slog.New(handler)
 }
+
+func NewNoOutLogger() *slog.Logger {
+	return slog.New(slog.DiscardHandler)
+}

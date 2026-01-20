@@ -2,8 +2,9 @@ package kv
 
 import (
 	"avacado/internal/protocol"
-	mockkv "avacado/internal/storage/kv/mocks"
-	mocksstorage "avacado/internal/storage/mocks"
+	kv2 "avacado/internal/storage/kv"
+	mockkv "avacado/internal/storage/kv/mock"
+	mocksstorage "avacado/internal/storage/mock"
 	"context"
 	"fmt"
 	"testing"
@@ -93,11 +94,12 @@ func TestSet_ExecuteSuccessfully(t *testing.T) {
 
 	ctx := context.Background()
 	value := []byte("value")
-	kv.EXPECT().Set(ctx, "key", value).Return(nil)
+	kv.EXPECT().Set(ctx, "key", value, kv2.NewSetOptions()).Return(nil)
 
 	command := &Set{
-		Key:   "key",
-		Value: value,
+		Key:     "key",
+		Value:   value,
+		Options: kv2.NewSetOptions(),
 	}
 	response := command.Execute(ctx, storage)
 	assert.Equal(t, protocol.NewSimpleStringResponse("OK"), response)
@@ -111,7 +113,7 @@ func TestSet_ExecuteWithError(t *testing.T) {
 
 	ctx := context.Background()
 	value := []byte("value")
-	kv.EXPECT().Set(ctx, "key", value).Return(fmt.Errorf("some error"))
+	kv.EXPECT().Set(ctx, "key", value, gomock.Any()).Return(fmt.Errorf("some error"))
 
 	command := &Set{
 		Key:   "key",

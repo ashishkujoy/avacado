@@ -28,7 +28,7 @@ func (s *SetOptions) WithXX() *SetOptions {
 	return s
 }
 
-//go:generate mockgen -source=store.go -destination=mocks/store.go -package=mockkv
+//go:generate mockgen -source=store.go -destination=mock/store.go -package=mockkv
 type Store interface {
 	Set(ctx context.Context, key string, value []byte, options *SetOptions) error
 	Get(ctx context.Context, key string) ([]byte, error)

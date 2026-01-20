@@ -40,7 +40,7 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
-// KV mock base method.
+// KV mocks base method.
 func (m *MockStorage) KV() kv.Store {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "KV")

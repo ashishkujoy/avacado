@@ -5,7 +5,7 @@ import (
 	"avacado/internal/storage/kv/memory"
 )
 
-//go:generate mockgen -source=storage.go -destination=mocks/storage.go -package=mocksstorage
+//go:generate mockgen -source=storage.go -destination=mock/storage.go -package=mocksstorage
 type Storage interface {
 	KV() kv.Store
 }

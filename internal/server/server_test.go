@@ -4,11 +4,10 @@ import (
 	mockcommand "avacado/internal/command/mock"
 	"avacado/internal/observability"
 	protocol2 "avacado/internal/protocol"
-	mockprotocol "avacado/internal/protocol/mocks"
-	mocksstorage "avacado/internal/storage/mocks"
+	mockprotocol "avacado/internal/protocol/mock"
+	mocksstorage "avacado/internal/storage/mock"
 	"fmt"
 	"io"
-	"log/slog"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +21,7 @@ func TestServer_HandlesErrorOnProtocolMessageParsing(t *testing.T) {
 	registry := mockcommand.NewMockParserRegistry(controller)
 
 	server := NewServer(protocol, registry, storage)
-	logger := observability.NewLogger(observability.LoggerConfig{Level: slog.LevelInfo, Format: "json"})
+	logger := observability.NewNoOutLogger()
 
 	connection := &mockConnection{
 		dataToRead:  []byte("input data"),
@@ -44,7 +43,7 @@ func TestServer_HandlesErrorOnCommandParsing(t *testing.T) {
 	registry := mockcommand.NewMockParserRegistry(controller)
 
 	server := NewServer(protocol, registry, storage)
-	logger := observability.NewLogger(observability.LoggerConfig{Level: slog.LevelInfo, Format: "json"})
+	logger := observability.NewNoOutLogger()
 
 	connection := &mockConnection{
 		dataToRead:  []byte("input data"),
@@ -69,7 +68,7 @@ func TestServer_HandlesCommandExecutionError(t *testing.T) {
 	resp := protocol2.NewErrorResponse(fmt.Errorf("command Execution fail"))
 
 	server := NewServer(protocol, registry, storage)
-	logger := observability.NewLogger(observability.LoggerConfig{Level: slog.LevelInfo, Format: "json"})
+	logger := observability.NewNoOutLogger()
 
 	connection := &mockConnection{
 		dataToRead:  []byte("input data"),
@@ -95,7 +94,7 @@ func TestServer_HandlesCommandExecutionSuccess(t *testing.T) {
 	resp := protocol2.NewSuccessResponse(protocol2.NewStringProtocolValue("OK"))
 
 	server := NewServer(protocol, registry, storage)
-	logger := observability.NewLogger(observability.LoggerConfig{Level: slog.LevelInfo, Format: "json"})
+	logger := observability.NewNoOutLogger()
 
 	connection := &mockConnection{
 		dataToRead:  []byte("input data"),

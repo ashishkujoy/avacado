@@ -10,6 +10,7 @@
 package mockkv
 
 import (
+	kv "avacado/internal/storage/kv"
 	context "context"
 	reflect "reflect"
 
@@ -40,7 +41,7 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 	return m.recorder
 }
 
-// Get mock base method.
+// Get mocks base method.
 func (m *MockStore) Get(ctx context.Context, key string) ([]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, key)
@@ -55,16 +56,16 @@ func (mr *MockStoreMockRecorder) Get(ctx, key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStore)(nil).Get), ctx, key)
 }
 
-// Set mock base method.
-func (m *MockStore) Set(ctx context.Context, key string, value []byte) error {
+// Set mocks base method.
+func (m *MockStore) Set(ctx context.Context, key string, value []byte, options *kv.SetOptions) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Set", ctx, key, value)
+	ret := m.ctrl.Call(m, "Set", ctx, key, value, options)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Set indicates an expected call of Set.
-func (mr *MockStoreMockRecorder) Set(ctx, key, value any) *gomock.Call {
+func (mr *MockStoreMockRecorder) Set(ctx, key, value, options any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockStore)(nil).Set), ctx, key, value)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockStore)(nil).Set), ctx, key, value, options)
 }
