@@ -93,7 +93,7 @@ type Serializer interface {
 	SerializeError(e error) []byte
 }
 
-//go:generate mockgen -source=protocol.go -destination=mock/protocol.go -package=mockprotocol
+//go:generate sh -c "rm -f mock/protocol.go && mockgen -source=protocol.go -destination=mock/protocol.go -package=mockprotocol"
 type Protocol interface {
 	Serializer
 	Parser
