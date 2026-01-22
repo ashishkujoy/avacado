@@ -3,6 +3,7 @@ package protocol
 import (
 	"fmt"
 	"io"
+	"strconv"
 )
 
 // Parser parses the protocol message
@@ -47,6 +48,22 @@ func (v *Value) AsBytes() ([]byte, error) {
 		return v.Bytes, nil
 	}
 	return nil, fmt.Errorf("value is not bytes")
+}
+
+func (v *Value) AsInt64() (int64, error) {
+	if v.Type == TypeNumber {
+		return v.Number, nil
+	}
+	// Try to parse from string types
+	str, err := v.AsString()
+	if err != nil {
+		return 0, fmt.Errorf("value is not a number or string")
+	}
+	num, err := strconv.ParseInt(str, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("value cannot be parsed as int64: %w", err)
+	}
+	return num, nil
 }
 
 func NewStringProtocolValue(s string) Value {

@@ -44,14 +44,26 @@ func (s SetParser) Parse(msg *protocol.Message) (command.Command, error) {
 	}
 	cmd := &Set{Key: key, Value: value}
 	options := kv.NewSetOptions()
-	for _, arg := range msg.Args[2:] {
-		argName, _ := arg.AsString()
+	for i := 2; i < len(msg.Args); i++ {
+		argName, _ := msg.Args[i].AsString()
 		argName = strings.ToUpper(argName)
 		if argName == "NX" {
 			options = options.WithNX()
 		}
 		if argName == "XX" {
 			options = options.WithXX()
+		}
+		if argName == "EX" {
+			// EX expects a numeric value in the next argument
+			if i+1 >= len(msg.Args) {
+				return nil, fmt.Errorf("set command: EX option requires a value")
+			}
+			i++ // Move to the next argument
+			exSeconds, err := msg.Args[i].AsInt64()
+			if err != nil {
+				return nil, fmt.Errorf("set command: EX value must be an integer: %w", err)
+			}
+			options = options.WithEX(exSeconds)
 		}
 		// TODO: error handling for unknown arg
 	}

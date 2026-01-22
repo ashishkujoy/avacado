@@ -9,9 +9,11 @@ const (
 	KeyNotPresentErrorType              = "KEY_NOT_PRESENT"
 )
 
+// SetOptions represent options supported by set command
 type SetOptions struct {
 	NX bool
 	XX bool
+	EX int64
 }
 
 func NewSetOptions() *SetOptions {
@@ -25,6 +27,11 @@ func (s *SetOptions) WithNX() *SetOptions {
 
 func (s *SetOptions) WithXX() *SetOptions {
 	s.XX = true
+	return s
+}
+
+func (s *SetOptions) WithEX(time int64) *SetOptions {
+	s.EX = time
 	return s
 }
 
