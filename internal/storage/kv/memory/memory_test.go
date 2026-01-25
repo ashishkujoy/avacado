@@ -4,26 +4,27 @@ import (
 	"avacado/internal/storage/kv"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestKVMemoryStore_GetAndSet(t *testing.T) {
 	store := NewKVMemoryStore()
-	value, err := store.Get(context.Background(), "key1")
+	v, err := store.Get(context.Background(), "key1")
 
 	assert.NoError(t, err)
-	assert.Nil(t, value)
+	assert.Nil(t, v)
 	options := kv.NewSetOptions()
 
 	err = store.Set(context.Background(), "key1", []byte("value1"), options)
 
 	assert.NoError(t, err)
 
-	value, err = store.Get(context.Background(), "key1")
+	v, err = store.Get(context.Background(), "key1")
 
 	assert.NoError(t, err)
-	assert.Equal(t, "value1", string(value))
+	assert.Equal(t, "value1", string(v))
 }
 
 func TestKVMemoryStore_SetExistingKeyWithNXOptionEnabled(t *testing.T) {
@@ -68,4 +69,20 @@ func TestKVMemoryStore_SetWithXXEnabled(t *testing.T) {
 
 	value, _ := store.Get(context.Background(), "key1")
 	assert.Equal(t, "value3", string(value))
+}
+
+func TestKVMemoryStore_Expiry(t *testing.T) {
+	store := NewKVMemoryStore()
+	options := kv.NewSetOptions()
+	options.WithEX(1)
+
+	err := store.Set(context.Background(), "key1", []byte("value1"), options)
+	assert.NoError(t, err)
+
+	v, _ := store.Get(context.Background(), "key1")
+	assert.NotNil(t, v)
+
+	<-time.Tick(1200 * time.Millisecond)
+	v, _ = store.Get(context.Background(), "key1")
+	assert.Nil(t, v)
 }
