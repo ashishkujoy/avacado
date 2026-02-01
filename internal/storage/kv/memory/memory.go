@@ -27,19 +27,27 @@ type KVMemoryStore struct {
 }
 
 func NewKVMemoryStore() *KVMemoryStore {
-	return &KVMemoryStore{
+	store := &KVMemoryStore{
 		store: make(map[string]*value),
 		mu:    sync.RWMutex{},
+		close: make(chan interface{}),
 	}
+	// Start background cleanup goroutine
+	go store.startExpiredKeyCleanUp()
+	return store
 }
 
 func (k *KVMemoryStore) startExpiredKeyCleanUp() {
-	tick := time.Tick(time.Second)
-	select {
-	case <-tick:
-		k.removeExpiredKeys()
-	case <-k.close:
-		return
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			k.removeExpiredKeys()
+		case <-k.close:
+			return
+		}
 	}
 }
 
@@ -63,17 +71,38 @@ func (k *KVMemoryStore) Set(_ context.Context, key string, data []byte, options 
 }
 
 func (k *KVMemoryStore) Get(_ context.Context, key string) ([]byte, error) {
+	// First, try with read lock (common case: key exists and not expired)
 	k.mu.RLock()
-	defer k.mu.RUnlock()
 	v, ok := k.store[key]
 	if !ok {
+		k.mu.RUnlock()
 		return nil, nil
 	}
-	if v.isExpired() {
+
+	// Check if expired while holding read lock
+	if !v.isExpired() {
+		// Happy path: key exists and not expired
+		data := v.data
+		k.mu.RUnlock()
+		return data, nil
+	}
+
+	// Key is expired - need to delete it
+	// Unlock read lock first
+	k.mu.RUnlock()
+
+	// Acquire write lock for deletion
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	// CRITICAL: Recheck after acquiring write lock (TOCTOU protection)
+	// Another goroutine might have deleted or updated this key
+	v, ok = k.store[key]
+	if ok && v.isExpired() {
 		delete(k.store, key)
-		return nil, nil
 	}
-	return v.data, nil
+
+	return nil, nil
 }
 
 func (k *KVMemoryStore) removeExpiredKeys() {
@@ -84,6 +113,12 @@ func (k *KVMemoryStore) removeExpiredKeys() {
 			delete(k.store, s)
 		}
 	}
+}
+
+// Close gracefully shuts down the KVMemoryStore and stops background cleanup
+func (k *KVMemoryStore) Close() error {
+	close(k.close)
+	return nil
 }
 
 func NewKeyAlreadyExistsError(key string) error {
