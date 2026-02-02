@@ -4,6 +4,7 @@ import (
 	"avacado/internal/protocol"
 	"avacado/internal/storage"
 	"context"
+	"fmt"
 )
 
 // Command represent a redis command.
@@ -28,4 +29,14 @@ type ParserRegistry interface {
 // Validator validate the command arguments
 type Validator interface {
 	Validate(msg protocol.Message) error
+}
+
+// NewInvalidArgumentsCount create a new error to be return when there is arguments counts mismatch while parsing command
+func NewInvalidArgumentsCount(name string, expectedCount int, actualCount int) error {
+	return fmt.Errorf("%s parse error, expected count <%d> actual count <%d>", name, expectedCount, actualCount)
+}
+
+// NewInvalidTypeError create a new error to be return when there is incorrect type of argument
+func NewInvalidTypeError(name string, field string) error {
+	return fmt.Errorf("%s parse error, incorrect option type %s", name, field)
 }

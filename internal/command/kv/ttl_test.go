@@ -59,3 +59,38 @@ func TestTTL_ExecutePositiveTTL(t *testing.T) {
 	assert.NoError(t, response2.Err)
 	assert.Equal(t, protocol.NewNumberResponse(int64(0)), response2)
 }
+
+func TestTTLParser_ParseAValidCommand(t *testing.T) {
+	parser := TTLParser{}
+	msg := &protocol.Message{
+		Command: "ttl",
+		Args: []protocol.Value{
+			protocol.NewStringProtocolValue("key"),
+		},
+	}
+	cmd, err := parser.Parse(msg)
+	assert.NoError(t, err)
+	assert.Equal(t, "key", (*cmd.(*TTL)).Key)
+}
+
+func TestTTLParser_ParseHandleErrorForMissingKey(t *testing.T) {
+	parser := TTLParser{}
+	msg := &protocol.Message{
+		Command: "ttl",
+		Args:    []protocol.Value{},
+	}
+	_, err := parser.Parse(msg)
+	assert.Error(t, err)
+}
+
+func TestTTLParser_ParseHandleErrorForIncorrectKeyDataType(t *testing.T) {
+	parser := TTLParser{}
+	msg := &protocol.Message{
+		Command: "ttl",
+		Args: []protocol.Value{
+			protocol.NewNumberProtocolValue(45),
+		},
+	}
+	_, err := parser.Parse(msg)
+	assert.Error(t, err)
+}
