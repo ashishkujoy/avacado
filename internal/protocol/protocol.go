@@ -131,3 +131,7 @@ func NewBulkStringResponse(b []byte) *Response {
 func NewNullBulkStringProtocolValue() Value {
 	return Value{Null: true, Type: TypeBulkString}
 }
+
+func NewNumberResponse(n int64) *Response {
+	return NewSuccessResponse(NewNumberProtocolValue(n))
+}

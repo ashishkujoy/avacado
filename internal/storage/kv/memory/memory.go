@@ -121,6 +121,21 @@ func (k *KVMemoryStore) Close() error {
 	return nil
 }
 
+// GetTTL returns the time to live for key in milliseconds
+func (k *KVMemoryStore) GetTTL(key string) (int64, error) {
+	k.mu.RLock()
+	defer k.mu.Unlock()
+	v, ok := k.store[key]
+	if !ok {
+		return -2, NewKeyNotPresentError(key)
+	}
+	if v.expiry == nil {
+		return -1, nil
+	}
+	now := time.Now()
+	return v.expiry.UnixMilli() - now.UnixMilli(), nil
+}
+
 func NewKeyAlreadyExistsError(key string) error {
 	return fmt.Errorf("set operation failed: key = %s, %s", key, kv.KeyAlreadyExistsErrorType)
 }

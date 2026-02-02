@@ -56,6 +56,21 @@ func (mr *MockStoreMockRecorder) Get(ctx, key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStore)(nil).Get), ctx, key)
 }
 
+// GetTTL mocks base method.
+func (m *MockStore) GetTTL(key string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTTL", key)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTTL indicates an expected call of GetTTL.
+func (mr *MockStoreMockRecorder) GetTTL(key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTTL", reflect.TypeOf((*MockStore)(nil).GetTTL), key)
+}
+
 // Set mocks base method.
 func (m *MockStore) Set(ctx context.Context, key string, value []byte, options *kv.SetOptions) error {
 	m.ctrl.T.Helper()
