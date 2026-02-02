@@ -19,6 +19,7 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 	registry.Register(kv.NewSetParser())
 	registry.Register(kv.NewGetParser())
 	registry.Register(kv.NewTTLParser())
+	registry.Register(kv.NewPTTLParser())
 
 	return registry
 }
