@@ -21,4 +21,11 @@ func Test_SetAndGetAKey(t *testing.T) {
 	var ctx = context.Background()
 	err = rdb.Set(ctx, "key", "value", 0).Err()
 	assert.NoError(t, err)
+
+	val, err := rdb.Get(ctx, "key").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "value", val)
+
+	_, err = rdb.Get(ctx, "nonexistent").Result()
+	assert.Equal(t, redis.Nil, err)
 }
