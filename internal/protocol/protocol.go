@@ -38,6 +38,10 @@ type Value struct {
 	Null   bool
 }
 
+func (v *Value) IsMap() bool {
+	return v.Type == TypeMap
+}
+
 func (v *Value) AsString() (string, error) {
 	if v.Type == TypeSimpleString {
 		return v.Str, nil
