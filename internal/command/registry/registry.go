@@ -3,6 +3,7 @@ package registry
 import (
 	"avacado/internal/command"
 	"avacado/internal/command/connection"
+	"avacado/internal/command/connection/client"
 	"avacado/internal/command/kv"
 	"avacado/internal/command/kv/expiry"
 	"avacado/internal/protocol"
@@ -24,6 +25,7 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 	registry.Register(expiry.NewTTLParser())
 	registry.Register(expiry.NewPTTLParser())
 	registry.Register(connection.NewHelloParser())
+	registry.Register(client.NewClientParser())
 
 	return registry
 }
