@@ -81,3 +81,16 @@ func TestParser_ParseArray(t *testing.T) {
 	assert.Equal(t, TypeArray, values[1].Type)
 	assert.Equal(t, TypeError, values[2].Type)
 }
+
+func TestParser_ParseMap(t *testing.T) {
+	data := "%2\r\n+first\r\n:1\r\n+second\r\n$2\r\nHi\r\n"
+
+	parser := Parser{reader: bufio.NewReader(strings.NewReader(data))}
+	value, err := parser.Parse()
+
+	assert.NoError(t, err)
+	assert.Equal(t, TypeMap, value.Type)
+	entries := value.Map
+
+	assert.Equal(t, 2, len(entries))
+}

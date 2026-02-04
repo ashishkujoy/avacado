@@ -29,6 +29,8 @@ func (p *Parser) Parse() (Value, error) {
 		return p.parseBulkString()
 	case TypeArray:
 		return p.parseArray()
+	case TypeMap:
+		return p.parseMap()
 	default:
 		return Value{}, fmt.Errorf("unknown RESP type: %c", typeByte)
 	}
@@ -134,6 +136,37 @@ func (p *Parser) expectCRLF() error {
 	}
 
 	return nil
+}
+
+// parseMap parses a RESP map
+func (p *Parser) parseMap() (Value, error) {
+	line, err := p.readLine()
+	if err != nil {
+		return Value{}, fmt.Errorf("failed to read map size: %w", err)
+	}
+
+	size, err := strconv.Atoi(string(line))
+	if err != nil {
+		return Value{}, fmt.Errorf("invalid map size: %w", err)
+	}
+
+	entries := make(map[string]Value)
+	for i := 0; i < size; i++ {
+		key, err := p.Parse()
+		if err != nil {
+			return Value{}, fmt.Errorf("failed to parse map key at index %d", i)
+		}
+		keyName, err := key.AsString()
+		if err != nil {
+			return Value{}, fmt.Errorf("unexpected key type at index %d", i)
+		}
+		value, err := p.Parse()
+		if err != nil {
+			return Value{}, fmt.Errorf("failed to parse value for key %s", keyName)
+		}
+		entries[keyName] = value
+	}
+	return NewMap(entries), nil
 }
 
 // parseArray parses a RESP array (*...\r\n...)

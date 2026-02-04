@@ -18,6 +18,7 @@ const (
 	TypeBulkString             = '$'
 	TypeNumber                 = ':'
 	TypeArray                  = '*'
+	TypeMap                    = '%'
 )
 
 // Value represent a protocol value
@@ -27,6 +28,7 @@ type Value struct {
 	Bytes  []byte
 	Number int64
 	Array  []Value
+	Map    map[string]Value
 	Null   bool
 }
 

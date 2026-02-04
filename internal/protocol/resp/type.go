@@ -10,6 +10,7 @@ const (
 	TypeInteger      Type = ':'
 	TypeBulkString   Type = '$'
 	TypeArray        Type = '*'
+	TypeMap          Type = '%'
 )
 
 // Value represent a RESP value
@@ -19,6 +20,7 @@ type Value struct {
 	Num   int64
 	Bulk  []byte
 	Array []Value
+	Map   map[string]Value
 	Null  bool
 }
 
@@ -113,6 +115,11 @@ func NewNullBulkString() Value {
 // NewArray creates an array value
 func NewArray(values []Value) Value {
 	return Value{Type: TypeArray, Array: values}
+}
+
+// NewMap create a map value
+func NewMap(entries map[string]Value) Value {
+	return Value{Type: TypeMap, Map: entries}
 }
 
 // NewNullArray creates a null array
