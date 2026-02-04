@@ -42,6 +42,8 @@ func (s *Serializer) writeValue(buf *bytes.Buffer, value protocol.Value) error {
 		return s.writeNumber(buf, value.Number)
 	case protocol.TypeArray:
 		return s.writeArray(buf, value.Array)
+	case protocol.TypeMap:
+		return s.writeMap(buf, value.Map, value.Null)
 	}
 	return fmt.Errorf("no serializer found for value type: %s", string(value.Type))
 }
@@ -80,6 +82,28 @@ func (s *Serializer) writeArray(buf *bytes.Buffer, array []protocol.Value) error
 	buf.WriteString(newLineCarriageReturn)
 	for _, item := range array {
 		if err := s.writeValue(buf, item); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Serializer) writeMap(buf *bytes.Buffer, entries []protocol.MapEntry, isNull bool) error {
+	buf.WriteByte(TypeMap)
+	if isNull {
+		buf.WriteString("-1")
+		buf.WriteString(newLineCarriageReturn)
+		return nil
+	}
+	buf.WriteString(strconv.FormatInt(int64(len(entries)), 10))
+	buf.WriteString(newLineCarriageReturn)
+	for _, entry := range entries {
+		// Write key as bulk string
+		if err := s.writeBulkString(buf, []byte(entry.Key), false); err != nil {
+			return err
+		}
+		// Write value
+		if err := s.writeValue(buf, entry.Val); err != nil {
 			return err
 		}
 	}
