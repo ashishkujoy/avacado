@@ -150,7 +150,7 @@ func (p *Parser) parseMap() (Value, error) {
 		return Value{}, fmt.Errorf("invalid map size: %w", err)
 	}
 
-	entries := make(map[string]Value)
+	entries := make([]MapEntry, 0, size)
 	for i := 0; i < size; i++ {
 		key, err := p.Parse()
 		if err != nil {
@@ -164,7 +164,7 @@ func (p *Parser) parseMap() (Value, error) {
 		if err != nil {
 			return Value{}, fmt.Errorf("failed to parse value for key %s", keyName)
 		}
-		entries[keyName] = value
+		entries = append(entries, MapEntry{Key: keyName, Val: value})
 	}
 	return NewMap(entries), nil
 }

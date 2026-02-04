@@ -21,6 +21,12 @@ const (
 	TypeMap                    = '%'
 )
 
+// MapEntry represents a key-value pair in a protocol map, preserving order
+type MapEntry struct {
+	Key string
+	Val Value
+}
+
 // Value represent a protocol value
 type Value struct {
 	Type   ValueType
@@ -28,7 +34,7 @@ type Value struct {
 	Bytes  []byte
 	Number int64
 	Array  []Value
-	Map    map[string]Value
+	Map    []MapEntry
 	Null   bool
 }
 
@@ -68,6 +74,16 @@ func (v *Value) AsInt64() (int64, error) {
 	return num, nil
 }
 
+func (v *Value) AsMap() ([]MapEntry, error) {
+	if v.Type != TypeMap {
+		return nil, fmt.Errorf("value is not a map")
+	}
+	if v.Null {
+		return nil, fmt.Errorf("null map")
+	}
+	return v.Map, nil
+}
+
 func NewStringProtocolValue(s string) Value {
 	return Value{Type: TypeSimpleString, Str: s}
 }
@@ -82,6 +98,14 @@ func NewNumberProtocolValue(n int64) Value {
 
 func NewArrayProtocolValue(values []Value) Value {
 	return Value{Type: TypeArray, Array: values}
+}
+
+func NewMapProtocolValue(entries []MapEntry) Value {
+	return Value{Type: TypeMap, Map: entries}
+}
+
+func NewNullMapProtocolValue() Value {
+	return Value{Type: TypeMap, Null: true}
 }
 
 // Message represents a protocol message, containing command name and args
@@ -136,4 +160,12 @@ func NewNullBulkStringProtocolValue() Value {
 
 func NewNumberResponse(n int64) *Response {
 	return NewSuccessResponse(NewNumberProtocolValue(n))
+}
+
+func NewMapResponse(entries []MapEntry) *Response {
+	return NewSuccessResponse(NewMapProtocolValue(entries))
+}
+
+func NewNullMapResponse() *Response {
+	return NewSuccessResponse(NewNullMapProtocolValue())
 }
