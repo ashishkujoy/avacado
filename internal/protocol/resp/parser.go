@@ -138,7 +138,7 @@ func (p *Parser) expectCRLF() error {
 	return nil
 }
 
-// parseMap parses a RESP map
+// parseMap parses a RESP map (%...\r\n...)
 func (p *Parser) parseMap() (Value, error) {
 	line, err := p.readLine()
 	if err != nil {
@@ -150,19 +150,43 @@ func (p *Parser) parseMap() (Value, error) {
 		return Value{}, fmt.Errorf("invalid map size: %w", err)
 	}
 
+	// Handle null map
+	if size == -1 {
+		return NewNullMap(), nil
+	}
+
+	if size < 0 {
+		return Value{}, fmt.Errorf("invalid map size: %d", size)
+	}
+
+	// Parse map entries
 	entries := make([]MapEntry, 0, size)
 	for i := 0; i < size; i++ {
 		key, err := p.Parse()
 		if err != nil {
-			return Value{}, fmt.Errorf("failed to parse map key at index %d", i)
+			return Value{}, fmt.Errorf("failed to parse map key at index %d: %w", i, err)
 		}
-		keyName, err := key.AsString()
-		if err != nil {
-			return Value{}, fmt.Errorf("unexpected key type at index %d", i)
+
+		// Keys can be simple strings or bulk strings
+		var keyName string
+		if key.Type == TypeSimpleString {
+			keyName, err = key.AsString()
+			if err != nil {
+				return Value{}, fmt.Errorf("failed to read simple string key at index %d: %w", i, err)
+			}
+		} else if key.Type == TypeBulkString {
+			bulk, err := key.AsBulk()
+			if err != nil {
+				return Value{}, fmt.Errorf("failed to read bulk string key at index %d: %w", i, err)
+			}
+			keyName = string(bulk)
+		} else {
+			return Value{}, fmt.Errorf("unexpected key type at index %d: must be string or bulk string, got %c", i, key.Type)
 		}
+
 		value, err := p.Parse()
 		if err != nil {
-			return Value{}, fmt.Errorf("failed to parse value for key %s", keyName)
+			return Value{}, fmt.Errorf("failed to parse value for key %s: %w", keyName, err)
 		}
 		entries = append(entries, MapEntry{Key: keyName, Val: value})
 	}
