@@ -41,8 +41,9 @@ func (s *Server) Serve(conn Connection, logger *slog.Logger) error {
 		logger.Info("closing connection")
 		conn.Close()
 	}()
+	parser := s.protocol.CreateParser(conn)
 	for {
-		message, err := s.protocol.Parse(conn)
+		message, err := parser.Parse()
 		if err == io.EOF {
 			return nil
 		}

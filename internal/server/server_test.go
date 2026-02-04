@@ -19,6 +19,7 @@ func TestServer_HandlesErrorOnProtocolMessageParsing(t *testing.T) {
 	protocol := mockprotocol.NewMockProtocol(controller)
 	storage := mocksstorage.NewMockStorage(controller)
 	registry := mockcommand.NewMockParserRegistry(controller)
+	parser := mockprotocol.NewMockParser(controller)
 
 	server := NewServer(protocol, registry, storage)
 	logger := observability.NewNoOutLogger()
@@ -29,7 +30,8 @@ func TestServer_HandlesErrorOnProtocolMessageParsing(t *testing.T) {
 		dataWritten: []byte{},
 	}
 
-	protocol.EXPECT().Parse(connection).Return(nil, fmt.Errorf("protocol parse error"))
+	protocol.EXPECT().CreateParser(connection).Return(parser)
+	parser.EXPECT().Parse().Return(nil, fmt.Errorf("protocol parse error"))
 	protocol.EXPECT().SerializeError(gomock.Any()).Return([]byte("-protocol parse error\r\n"))
 
 	server.Serve(connection, logger)
@@ -41,6 +43,7 @@ func TestServer_HandlesErrorOnCommandParsing(t *testing.T) {
 	protocol := mockprotocol.NewMockProtocol(controller)
 	storage := mocksstorage.NewMockStorage(controller)
 	registry := mockcommand.NewMockParserRegistry(controller)
+	parser := mockprotocol.NewMockParser(controller)
 
 	server := NewServer(protocol, registry, storage)
 	logger := observability.NewNoOutLogger()
@@ -51,7 +54,8 @@ func TestServer_HandlesErrorOnCommandParsing(t *testing.T) {
 		dataWritten: []byte{},
 	}
 	msg := &protocol2.Message{}
-	protocol.EXPECT().Parse(connection).Return(msg, nil)
+	protocol.EXPECT().CreateParser(connection).Return(parser)
+	parser.EXPECT().Parse().Return(msg, nil)
 	registry.EXPECT().Parse(gomock.Any()).Return(nil, fmt.Errorf("command parse error"))
 	protocol.EXPECT().SerializeError(gomock.Any()).Return([]byte("-command parse error\r\n"))
 
@@ -65,6 +69,7 @@ func TestServer_HandlesCommandExecutionError(t *testing.T) {
 	storage := mocksstorage.NewMockStorage(controller)
 	registry := mockcommand.NewMockParserRegistry(controller)
 	cmd := mockcommand.NewMockCommand(controller)
+	parser := mockprotocol.NewMockParser(controller)
 	resp := protocol2.NewErrorResponse(fmt.Errorf("command Execution fail"))
 
 	server := NewServer(protocol, registry, storage)
@@ -76,7 +81,8 @@ func TestServer_HandlesCommandExecutionError(t *testing.T) {
 		dataWritten: []byte{},
 	}
 	msg := &protocol2.Message{}
-	protocol.EXPECT().Parse(connection).Return(msg, nil)
+	protocol.EXPECT().CreateParser(connection).Return(parser)
+	parser.EXPECT().Parse().Return(msg, nil)
 	registry.EXPECT().Parse(gomock.Any()).Return(cmd, nil)
 	cmd.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(resp)
 	protocol.EXPECT().SerializeError(gomock.Any()).Return([]byte("-command Execution fail\r\n"))
@@ -92,6 +98,7 @@ func TestServer_HandlesCommandExecutionSuccess(t *testing.T) {
 	storage := mocksstorage.NewMockStorage(controller)
 	cmd := mockcommand.NewMockCommand(controller)
 	resp := protocol2.NewSuccessResponse(protocol2.NewStringProtocolValue("OK"))
+	parser := mockprotocol.NewMockParser(controller)
 
 	server := NewServer(protocol, registry, storage)
 	logger := observability.NewNoOutLogger()
@@ -102,11 +109,12 @@ func TestServer_HandlesCommandExecutionSuccess(t *testing.T) {
 		dataWritten: []byte{},
 	}
 	msg := &protocol2.Message{}
-	protocol.EXPECT().Parse(connection).Return(msg, nil)
+	protocol.EXPECT().CreateParser(connection).Return(parser)
+	parser.EXPECT().Parse().Return(msg, nil)
 	registry.EXPECT().Parse(gomock.Any()).Return(cmd, nil)
 	cmd.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(resp)
 	protocol.EXPECT().Serialize(gomock.Any()).Return([]byte("-command success\r\n"), nil)
-	protocol.EXPECT().Parse(connection).Return(nil, io.EOF)
+	parser.EXPECT().Parse().Return(nil, io.EOF)
 
 	server.Serve(connection, logger)
 	assert.Equal(t, "-command success\r\n", string(connection.dataWritten))

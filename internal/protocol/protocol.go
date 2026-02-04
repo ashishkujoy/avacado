@@ -7,8 +7,10 @@ import (
 )
 
 // Parser parses the protocol message
+//
+//go:generate sh -c "rm -f mock/protocol.go && mockgen -source=protocol.go -destination=mock/protocol.go -package=mockprotocol"
 type Parser interface {
-	Parse(r io.Reader) (*Message, error)
+	Parse() (*Message, error)
 }
 
 type ValueType byte
@@ -143,7 +145,7 @@ type Serializer interface {
 //go:generate sh -c "rm -f mock/protocol.go && mockgen -source=protocol.go -destination=mock/protocol.go -package=mockprotocol"
 type Protocol interface {
 	Serializer
-	Parser
+	CreateParser(reader io.Reader) Parser
 }
 
 func NewSimpleStringResponse(s string) *Response {

@@ -6,8 +6,9 @@ import (
 	"io"
 )
 
-// RESPCommandParser implements a parser for RESP commands
+// CommandParser implements a parser for RESP commands
 type CommandParser struct {
+	respParser *Parser
 }
 
 // toProtocolValue converts resp value to protocol value
@@ -84,8 +85,8 @@ func toProtocolValue(value Value) (protocol.Value, error) {
 }
 
 // Parse parses a RESP command from the given io reader
-func (c *CommandParser) Parse(r io.Reader) (*protocol.Message, error) {
-	parser := NewParser(r)
+func (c *CommandParser) Parse() (*protocol.Message, error) {
+	parser := c.respParser
 	value, err := parser.Parse()
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse command: %w", err)
@@ -113,6 +114,8 @@ func (c *CommandParser) Parse(r io.Reader) (*protocol.Message, error) {
 	return &protocol.Message{Command: command, Args: args}, nil
 }
 
-func NewCommandParser() *CommandParser {
-	return &CommandParser{}
+func NewCommandParser(reader io.Reader) *CommandParser {
+	return &CommandParser{
+		respParser: NewParser(reader),
+	}
 }

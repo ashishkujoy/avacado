@@ -42,18 +42,18 @@ func (m *MockParser) EXPECT() *MockParserMockRecorder {
 }
 
 // Parse mocks base method.
-func (m *MockParser) Parse(r io.Reader) (*protocol.Message, error) {
+func (m *MockParser) Parse() (*protocol.Message, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Parse", r)
+	ret := m.ctrl.Call(m, "Parse")
 	ret0, _ := ret[0].(*protocol.Message)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Parse indicates an expected call of Parse.
-func (mr *MockParserMockRecorder) Parse(r any) *gomock.Call {
+func (mr *MockParserMockRecorder) Parse() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parse", reflect.TypeOf((*MockParser)(nil).Parse), r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parse", reflect.TypeOf((*MockParser)(nil).Parse))
 }
 
 // MockSerializer is a mock of Serializer interface.
@@ -133,19 +133,18 @@ func (m *MockProtocol) EXPECT() *MockProtocolMockRecorder {
 	return m.recorder
 }
 
-// Parse mocks base method.
-func (m *MockProtocol) Parse(r io.Reader) (*protocol.Message, error) {
+// CreateParser mocks base method.
+func (m *MockProtocol) CreateParser(reader io.Reader) protocol.Parser {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Parse", r)
-	ret0, _ := ret[0].(*protocol.Message)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret := m.ctrl.Call(m, "CreateParser", reader)
+	ret0, _ := ret[0].(protocol.Parser)
+	return ret0
 }
 
-// Parse indicates an expected call of Parse.
-func (mr *MockProtocolMockRecorder) Parse(r any) *gomock.Call {
+// CreateParser indicates an expected call of CreateParser.
+func (mr *MockProtocolMockRecorder) CreateParser(reader any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Parse", reflect.TypeOf((*MockProtocol)(nil).Parse), r)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateParser", reflect.TypeOf((*MockProtocol)(nil).CreateParser), reader)
 }
 
 // Serialize mocks base method.
