@@ -60,6 +60,25 @@ func toProtocolValue(value Value) (protocol.Value, error) {
 			}
 			return protocol.NewArrayProtocolValue(values), nil
 		}
+	case value.IsMap():
+		{
+			entries, err := value.AsMap()
+			if err != nil {
+				return protocol.Value{}, err
+			}
+			protocolEntries := make([]protocol.MapEntry, len(entries))
+			for i, entry := range entries {
+				protocolVal, err := toProtocolValue(entry.Val)
+				if err != nil {
+					return protocol.Value{}, err
+				}
+				protocolEntries[i] = protocol.MapEntry{
+					Key: entry.Key,
+					Val: protocolVal,
+				}
+			}
+			return protocol.NewMapProtocolValue(protocolEntries), nil
+		}
 	}
 	return protocol.Value{}, fmt.Errorf("unreachable")
 }
