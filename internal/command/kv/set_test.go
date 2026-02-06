@@ -211,7 +211,7 @@ func TestSet_ExecuteSuccessfully(t *testing.T) {
 
 	ctx := context.Background()
 	value := []byte("value")
-	kv.EXPECT().Set(ctx, "key", value, kv2.NewSetOptions()).Return(nil)
+	kv.EXPECT().Set(ctx, "key", value, kv2.NewSetOptions()).Return(nil, nil)
 
 	command := &Set{
 		Key:     "key",
@@ -230,7 +230,7 @@ func TestSet_ExecuteWithError(t *testing.T) {
 
 	ctx := context.Background()
 	value := []byte("value")
-	kv.EXPECT().Set(ctx, "key", value, gomock.Any()).Return(fmt.Errorf("some error"))
+	kv.EXPECT().Set(ctx, "key", value, gomock.Any()).Return(nil, fmt.Errorf("some error"))
 
 	command := &Set{
 		Key:   "key",

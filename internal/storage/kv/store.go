@@ -11,10 +11,11 @@ const (
 
 // SetOptions represent options supported by set command
 type SetOptions struct {
-	NX bool
-	XX bool
-	EX int64
-	PX int64
+	NX  bool
+	XX  bool
+	EX  int64
+	PX  int64
+	Get bool
 }
 
 func NewSetOptions() *SetOptions {
@@ -39,9 +40,15 @@ func (s *SetOptions) WithEX(time int64) *SetOptions {
 	return s
 }
 
+// WithGet set get option which return old value of the key if it exists
+func (s *SetOptions) WithGet() *SetOptions {
+	s.Get = true
+	return s
+}
+
 //go:generate sh -c "rm -f mock/store.go && mockgen -source=store.go -destination=mock/store.go -package=mockkv"
 type Store interface {
-	Set(ctx context.Context, key string, value []byte, options *SetOptions) error
+	Set(ctx context.Context, key string, value []byte, options *SetOptions) ([]byte, error)
 	Get(ctx context.Context, key string) ([]byte, error)
 	GetTTL(key string) (int64, error)
 }

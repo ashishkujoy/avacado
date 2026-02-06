@@ -116,3 +116,23 @@ func TestSet_XXOption(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "new value", val)
 }
+
+func TestSet_GetOption(t *testing.T) {
+	ctx := context.Background()
+	t.Cleanup(func() {
+		testClient.FlushDB(ctx)
+	})
+
+	err := testClient.Set(ctx, "key1", "value1", -1).Err()
+	assert.NoError(t, err)
+
+	// Get old value while setting new value
+	oldVal, err := testClient.SetArgs(ctx, "key1", "value2", redis.SetArgs{Get: true}).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "value1", oldVal)
+
+	// Get old value while setting new value for non-existent key
+	oldVal, err = testClient.SetArgs(ctx, "key2", "value3", redis.SetArgs{Get: true}).Result()
+	assert.Equal(t, redis.Nil, err)
+	assert.Equal(t, "", oldVal)
+}

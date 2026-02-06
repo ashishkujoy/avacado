@@ -72,11 +72,12 @@ func (mr *MockStoreMockRecorder) GetTTL(key any) *gomock.Call {
 }
 
 // Set mocks base method.
-func (m *MockStore) Set(ctx context.Context, key string, value []byte, options *kv.SetOptions) error {
+func (m *MockStore) Set(ctx context.Context, key string, value []byte, options *kv.SetOptions) ([]byte, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Set", ctx, key, value, options)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // Set indicates an expected call of Set.

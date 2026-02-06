@@ -51,23 +51,28 @@ func (k *KVMemoryStore) startExpiredKeyCleanUp() {
 	}
 }
 
-func (k *KVMemoryStore) Set(_ context.Context, key string, data []byte, options *kv.SetOptions) error {
+func (k *KVMemoryStore) Set(_ context.Context, key string, data []byte, options *kv.SetOptions) ([]byte, error) {
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	_, keyAlreadyExists := k.store[key]
+	oldValue, keyAlreadyExists := k.store[key]
 	if keyAlreadyExists && options.NX {
-		return NewKeyAlreadyExistsError(key)
+		return nil, NewKeyAlreadyExistsError(key)
 	}
 	if !keyAlreadyExists && options.XX {
-		return NewKeyNotPresentError(key)
+		return nil, NewKeyNotPresentError(key)
 	}
 	var expiry *time.Time
 	if options.EX != 0 {
 		expiryTime := time.Now().Add(time.Duration(options.EX) * time.Second)
 		expiry = &expiryTime
 	}
+
 	k.store[key] = &value{data: data, expiry: expiry}
-	return nil
+	var d []byte
+	if keyAlreadyExists && options.Get {
+		d = oldValue.data
+	}
+	return d, nil
 }
 
 func (k *KVMemoryStore) Get(_ context.Context, key string) ([]byte, error) {

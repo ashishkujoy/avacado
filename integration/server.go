@@ -11,10 +11,7 @@ import (
 )
 
 func StartNewServer(port int64) (func(), error) {
-	logger := observability.NewLogger(observability.LoggerConfig{
-		Level:  0,
-		Format: "json",
-	})
+	logger := observability.NewNoOutLogger()
 	s := server.NewServer(
 		resp.NewRespProtocol(),
 		registry.SetupDefaultParserRegistry(),

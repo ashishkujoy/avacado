@@ -18,9 +18,15 @@ type Set struct {
 }
 
 func (s *Set) Execute(ctx context.Context, storage storage.Storage) *protocol.Response {
-	err := storage.KV().Set(ctx, s.Key, s.Value, s.Options)
+	oldValue, err := storage.KV().Set(ctx, s.Key, s.Value, s.Options)
 	if err != nil {
 		return protocol.NewNullBulkStringResponse()
+	}
+	if s.Options.Get {
+		if oldValue == nil {
+			return protocol.NewNullBulkStringResponse()
+		}
+		return protocol.NewBulkStringResponse(oldValue)
 	}
 	return protocol.NewSimpleStringResponse("OK")
 }
@@ -64,6 +70,9 @@ func (s SetParser) Parse(msg *protocol.Message) (command.Command, error) {
 				return nil, fmt.Errorf("set command: EX value must be an integer: %w", err)
 			}
 			options = options.WithEX(exSeconds)
+		}
+		if argName == "GET" {
+			options = options.WithGet()
 		}
 		// TODO: error handling for unknown arg
 	}

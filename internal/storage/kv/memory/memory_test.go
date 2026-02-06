@@ -18,7 +18,7 @@ func TestKVMemoryStore_GetAndSet(t *testing.T) {
 	assert.Nil(t, v)
 	options := kv.NewSetOptions()
 
-	err = store.Set(context.Background(), "key1", []byte("value1"), options)
+	_, err = store.Set(context.Background(), "key1", []byte("value1"), options)
 
 	assert.NoError(t, err)
 
@@ -33,10 +33,10 @@ func TestKVMemoryStore_SetExistingKeyWithNXOptionEnabled(t *testing.T) {
 	options := kv.NewSetOptions()
 	options.WithNX()
 
-	err := store.Set(context.Background(), "key1", []byte("value1"), options)
+	_, err := store.Set(context.Background(), "key1", []byte("value1"), options)
 	assert.NoError(t, err)
 
-	err = store.Set(context.Background(), "key1", []byte("value2"), options)
+	_, err = store.Set(context.Background(), "key1", []byte("value2"), options)
 	assert.Error(t, err, NewKeyAlreadyExistsError("key1"))
 }
 
@@ -44,10 +44,10 @@ func TestKVMemoryStore_SetExistingKeyWithNXOptionDisabled(t *testing.T) {
 	store := NewKVMemoryStore()
 	option := kv.NewSetOptions()
 
-	err := store.Set(context.Background(), "key1", []byte("value1"), option)
+	_, err := store.Set(context.Background(), "key1", []byte("value1"), option)
 	assert.NoError(t, err)
 
-	err = store.Set(context.Background(), "key1", []byte("value2"), option)
+	_, err = store.Set(context.Background(), "key1", []byte("value2"), option)
 	assert.NoError(t, err)
 
 	value, _ := store.Get(context.Background(), "key1")
@@ -59,13 +59,13 @@ func TestKVMemoryStore_SetWithXXEnabled(t *testing.T) {
 	optionWithXX := kv.NewSetOptions()
 	optionWithXX.WithXX()
 
-	err := store.Set(context.Background(), "key1", []byte("value1"), optionWithXX)
+	_, err := store.Set(context.Background(), "key1", []byte("value1"), optionWithXX)
 	assert.Error(t, err)
 
-	err = store.Set(context.Background(), "key1", []byte("value2"), kv.NewSetOptions())
+	_, err = store.Set(context.Background(), "key1", []byte("value2"), kv.NewSetOptions())
 	assert.NoError(t, err)
 
-	err = store.Set(context.Background(), "key1", []byte("value3"), optionWithXX)
+	_, err = store.Set(context.Background(), "key1", []byte("value3"), optionWithXX)
 	assert.NoError(t, err)
 
 	value, _ := store.Get(context.Background(), "key1")
@@ -78,7 +78,7 @@ func TestKVMemoryStore_Expiry(t *testing.T) {
 	options := kv.NewSetOptions()
 	options.WithEX(1)
 
-	err := store.Set(context.Background(), "key1", []byte("value1"), options)
+	_, err := store.Set(context.Background(), "key1", []byte("value1"), options)
 	assert.NoError(t, err)
 
 	v, _ := store.Get(context.Background(), "key1")
@@ -97,7 +97,7 @@ func TestKVMemoryStore_ConcurrentGetExpiredKey(t *testing.T) {
 	options := kv.NewSetOptions().WithEX(1)
 
 	// Set a key that will expire
-	err := store.Set(context.Background(), "key1", []byte("value1"), options)
+	_, err := store.Set(context.Background(), "key1", []byte("value1"), options)
 	assert.NoError(t, err)
 
 	// Wait for expiry
@@ -138,7 +138,7 @@ func TestKVMemoryStore_ConcurrentReadWrite(t *testing.T) {
 			key := "key1"
 			value := []byte("value")
 			options := kv.NewSetOptions()
-			err := store.Set(context.Background(), key, value, options)
+			_, err := store.Set(context.Background(), key, value, options)
 			assert.NoError(t, err)
 		}(i)
 	}
@@ -164,7 +164,7 @@ func TestKVMemoryStore_BackgroundCleanup(t *testing.T) {
 	// Set multiple keys with short expiry
 	for i := 0; i < 10; i++ {
 		options := kv.NewSetOptions().WithEX(1)
-		err := store.Set(context.Background(), "key"+string(rune('0'+i)), []byte("value"), options)
+		_, err := store.Set(context.Background(), "key"+string(rune('0'+i)), []byte("value"), options)
 		assert.NoError(t, err)
 	}
 
@@ -185,7 +185,7 @@ func TestKVMemoryStore_Close(t *testing.T) {
 
 	// Set some keys
 	options := kv.NewSetOptions()
-	err := store.Set(context.Background(), "key1", []byte("value1"), options)
+	_, err := store.Set(context.Background(), "key1", []byte("value1"), options)
 	assert.NoError(t, err)
 
 	// Close the store
@@ -204,7 +204,7 @@ func TestKVMemoryStore_LazyExpirationImmediateCleanup(t *testing.T) {
 	options := kv.NewSetOptions().WithEX(1)
 
 	// Set a key
-	err := store.Set(context.Background(), "key1", []byte("value1"), options)
+	_, err := store.Set(context.Background(), "key1", []byte("value1"), options)
 	assert.NoError(t, err)
 
 	// Wait for expiry
@@ -228,7 +228,7 @@ func TestKVMemoryStore_NonExpiredKeysDuringConcurrentAccess(t *testing.T) {
 	defer store.Close()
 	options := kv.NewSetOptions().WithEX(10) // Long expiry
 
-	err := store.Set(context.Background(), "key1", []byte("value1"), options)
+	_, err := store.Set(context.Background(), "key1", []byte("value1"), options)
 	assert.NoError(t, err)
 
 	var wg sync.WaitGroup
