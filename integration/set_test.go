@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -9,107 +10,109 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test_SetAndGetAKey(t *testing.T) {
+var testClient *redis.Client
+
+func TestMain(m *testing.M) {
 	shutdown, err := StartNewServer(6000)
-	assert.NoError(t, err)
-	defer shutdown()
-	rdb := redis.NewClient(&redis.Options{
+	if err != nil {
+		panic(err)
+	}
+
+	testClient = redis.NewClient(&redis.Options{
 		Addr:     "localhost:6000",
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Password: "",
+		DB:       0,
 	})
-	defer rdb.Close()
-	var ctx = context.Background()
-	err = rdb.Set(ctx, "key", "value", 0).Err()
+
+	code := m.Run()
+
+	if err := testClient.Close(); err != nil {
+		panic(err)
+	}
+	shutdown()
+	os.Exit(code)
+}
+
+func Test_SetAndGetAKey(t *testing.T) {
+	ctx := context.Background()
+	t.Cleanup(func() {
+		testClient.FlushDB(ctx)
+	})
+
+	err := testClient.Set(ctx, "key", "value", 0).Err()
 	assert.NoError(t, err)
 
-	val, err := rdb.Get(ctx, "key").Result()
+	val, err := testClient.Get(ctx, "key").Result()
 	assert.NoError(t, err)
 	assert.Equal(t, "value", val)
 
-	_, err = rdb.Get(ctx, "nonexistent").Result()
+	_, err = testClient.Get(ctx, "nonexistent").Result()
 	assert.Equal(t, redis.Nil, err)
 }
 
 func TestSet_Expiry(t *testing.T) {
-	shutdown, err := StartNewServer(6000)
-	assert.NoError(t, err)
-	defer shutdown()
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6000",
-		Password: "", // no password set
-		DB:       0,  // use default DB
+	ctx := context.Background()
+	t.Cleanup(func() {
+		testClient.FlushDB(ctx)
 	})
-	defer rdb.Close()
-	var ctx = context.Background()
-	err = rdb.Set(ctx, "key", "value", 1*time.Second).Err()
+
+	err := testClient.Set(ctx, "key", "value", 1*time.Second).Err()
 	assert.NoError(t, err)
 
-	val, err := rdb.Get(ctx, "key").Result()
+	val, err := testClient.Get(ctx, "key").Result()
 	assert.NoError(t, err)
 	assert.Equal(t, "value", val)
 
 	<-time.After(time.Second * 1)
 
-	_, err = rdb.Get(ctx, "key").Result()
+	_, err = testClient.Get(ctx, "key").Result()
 	assert.Equal(t, redis.Nil, err)
 }
 
 func TestSet_NXOption(t *testing.T) {
-	shutdown, err := StartNewServer(6000)
-	assert.NoError(t, err)
-	defer shutdown()
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6000",
-		Password: "", // no password set
-		DB:       0,  // use default DB
+	ctx := context.Background()
+	t.Cleanup(func() {
+		testClient.FlushDB(ctx)
 	})
-	defer rdb.Close()
-	var ctx = context.Background()
-	err = rdb.Set(ctx, "key1", "value", -1).Err()
+
+	err := testClient.Set(ctx, "key1", "value", -1).Err()
 	assert.NoError(t, err)
 
 	// Should not update since key1 already exists
-	err = rdb.SetNX(ctx, "key1", "newvalue", -1).Err()
+	err = testClient.SetNX(ctx, "key1", "newvalue", -1).Err()
 	assert.NoError(t, err)
 
-	val, err := rdb.Get(ctx, "key1").Result()
+	val, err := testClient.Get(ctx, "key1").Result()
 	assert.NoError(t, err)
 	assert.Equal(t, "value", val)
 
 	// Should set since key2 does not exist
-	err = rdb.SetNX(ctx, "key2", "value2", -1).Err()
+	err = testClient.SetNX(ctx, "key2", "value2", -1).Err()
 	assert.NoError(t, err)
 
-	val, err = rdb.Get(ctx, "key2").Result()
+	val, err = testClient.Get(ctx, "key2").Result()
 	assert.NoError(t, err)
 	assert.Equal(t, "value2", val)
 }
 
 func TestSet_XXOption(t *testing.T) {
-	shutdown, err := StartNewServer(6000)
-	assert.NoError(t, err)
-	defer shutdown()
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6000",
-		Password: "", // no password set
-		DB:       0,  // use default DB
+	ctx := context.Background()
+	t.Cleanup(func() {
+		testClient.FlushDB(ctx)
 	})
-	defer rdb.Close()
-	var ctx = context.Background()
 
 	// Should not set since key1 does not exist
-	err = rdb.SetXX(ctx, "key1", "value", -1).Err()
+	err := testClient.SetXX(ctx, "key1", "value", -1).Err()
 	assert.NoError(t, err)
 
-	err = rdb.Set(ctx, "key1", "old value", -1).Err()
+	err = testClient.Set(ctx, "key1", "old value", -1).Err()
 	assert.NoError(t, err)
 
 	// Should update since key1 already exists
-	err = rdb.SetXX(ctx, "key1", "new value", -1).Err()
+	err = testClient.SetXX(ctx, "key1", "new value", -1).Err()
 	assert.NoError(t, err)
 
-	val, err := rdb.Get(ctx, "key1").Result()
+	val, err := testClient.Get(ctx, "key1").Result()
 	assert.NoError(t, err)
 	assert.Equal(t, "new value", val)
 }
