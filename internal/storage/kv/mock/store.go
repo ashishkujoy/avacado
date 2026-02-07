@@ -56,6 +56,21 @@ func (mr *MockStoreMockRecorder) Decr(ctx, key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Decr", reflect.TypeOf((*MockStore)(nil).Decr), ctx, key)
 }
 
+// DecrBy mocks base method.
+func (m *MockStore) DecrBy(ctx context.Context, key string, decrement int64) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DecrBy", ctx, key, decrement)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DecrBy indicates an expected call of DecrBy.
+func (mr *MockStoreMockRecorder) DecrBy(ctx, key, decrement any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DecrBy", reflect.TypeOf((*MockStore)(nil).DecrBy), ctx, key, decrement)
+}
+
 // Get mocks base method.
 func (m *MockStore) Get(ctx context.Context, key string) ([]byte, error) {
 	m.ctrl.T.Helper()

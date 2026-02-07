@@ -276,3 +276,78 @@ func TestKVMemoryStore_Incr(t *testing.T) {
 	_, err = store.Incr(ctx, "counter3")
 	assert.Error(t, err)
 }
+
+func TestKVMemoryStore_Decr(t *testing.T) {
+	store := NewKVMemoryStore()
+	defer store.Close()
+	ctx := context.Background()
+
+	// Decrement non-existing key should initialize it to -1
+	val, err := store.Decr(ctx, "counter")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(-1), val)
+
+	_, err = store.Set(ctx, "counter1", []byte("10"), kv.NewSetOptions())
+	// Decrement existing key should decrement it
+	val, err = store.Decr(ctx, "counter1")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(9), val)
+
+	_, err = store.Set(ctx, "counter2", []byte("20"), kv.NewSetOptions().WithEX(1))
+	pastTime := time.Now().Add(-2 * time.Second)
+	store.store["counter2"].expiry = &pastTime
+
+	v, err := store.Decr(ctx, "counter2")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(-1), v)
+
+	// Decrementing a key with non-integer value should return an error
+	_, err = store.Set(context.Background(), "counter3", []byte("not-an-integer"), kv.NewSetOptions())
+	assert.NoError(t, err)
+
+	_, err = store.Decr(ctx, "counter3")
+	assert.Error(t, err)
+}
+
+func TestKVMemoryStore_DecrBy(t *testing.T) {
+	store := NewKVMemoryStore()
+	defer store.Close()
+	ctx := context.Background()
+
+	// Decrement non-existing key should initialize it to 0-decrement
+	val, err := store.DecrBy(ctx, "counter", 5)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(-5), val)
+
+	// Decrement it again
+	val, err = store.DecrBy(ctx, "counter", 3)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(-8), val)
+
+	_, err = store.Set(ctx, "counter1", []byte("100"), kv.NewSetOptions())
+	// Decrement existing key by specified amount
+	val, err = store.DecrBy(ctx, "counter1", 20)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(80), val)
+
+	// Decrement again
+	val, err = store.DecrBy(ctx, "counter1", 30)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(50), val)
+
+	_, err = store.Set(ctx, "counter2", []byte("50"), kv.NewSetOptions().WithEX(1))
+	pastTime := time.Now().Add(-2 * time.Second)
+	store.store["counter2"].expiry = &pastTime
+
+	// Decrement expired key should treat it as non-existent
+	v, err := store.DecrBy(ctx, "counter2", 15)
+	assert.NoError(t, err)
+	assert.Equal(t, int64(-15), v)
+
+	// Decrementing a key with non-integer value should return an error
+	_, err = store.Set(context.Background(), "counter3", []byte("not-an-integer"), kv.NewSetOptions())
+	assert.NoError(t, err)
+
+	_, err = store.DecrBy(ctx, "counter3", 10)
+	assert.Error(t, err)
+}

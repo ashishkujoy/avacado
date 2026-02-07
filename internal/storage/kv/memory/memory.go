@@ -75,6 +75,31 @@ func (k *KVMemoryStore) Decr(ctx context.Context, key string) (int64, error) {
 	return newValue, nil
 }
 
+func (k *KVMemoryStore) DecrBy(ctx context.Context, key string, decrement int64) (int64, error) {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	v, ok := k.store[key]
+	if !ok || v.isExpired() {
+		// If key does not exist or is expired, initialize it to 0 - decrement
+		newValue := 0 - decrement
+		k.store[key] = &value{data: []byte(fmt.Sprintf("%d", newValue))}
+		return newValue, nil
+	}
+
+	// Try to parse existing value as integer
+	oldValue, err := strconv.ParseInt(string(v.data), 10, 64)
+
+	if err != nil {
+		return 0, NewExpectsValidNumberError()
+	}
+
+	// Decrement the value by specified amount
+	newValue := oldValue - decrement
+	v.data = []byte(fmt.Sprintf("%d", newValue))
+	return newValue, nil
+}
+
 func NewKVMemoryStore() *KVMemoryStore {
 	store := &KVMemoryStore{
 		store: make(map[string]*value),
