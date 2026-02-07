@@ -244,3 +244,35 @@ func TestKVMemoryStore_NonExpiredKeysDuringConcurrentAccess(t *testing.T) {
 
 	wg.Wait()
 }
+
+func TestKVMemoryStore_Incr(t *testing.T) {
+	store := NewKVMemoryStore()
+	defer store.Close()
+	ctx := context.Background()
+
+	// Increment non-existing key should initialize it to 1
+	val, err := store.Incr(ctx, "counter")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), val)
+
+	_, err = store.Set(ctx, "counter1", []byte("10"), kv.NewSetOptions())
+	// Increment existing key should increment it
+	val, err = store.Incr(ctx, "counter1")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(11), val)
+
+	_, err = store.Set(ctx, "counter2", []byte("20"), kv.NewSetOptions().WithEX(1))
+	pastTime := time.Now().Add(-2 * time.Second)
+	store.store["counter2"].expiry = &pastTime
+
+	v, err := store.Incr(ctx, "counter2")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), v)
+
+	// Incrementing a key with non-integer value should return an error
+	_, err = store.Set(context.Background(), "counter3", []byte("not-an-integer"), kv.NewSetOptions())
+	assert.NoError(t, err)
+
+	_, err = store.Incr(ctx, "counter3")
+	assert.Error(t, err)
+}

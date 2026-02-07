@@ -71,6 +71,21 @@ func (mr *MockStoreMockRecorder) GetTTL(key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTTL", reflect.TypeOf((*MockStore)(nil).GetTTL), key)
 }
 
+// Incr mocks base method.
+func (m *MockStore) Incr(ctx context.Context, key string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Incr", ctx, key)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Incr indicates an expected call of Incr.
+func (mr *MockStoreMockRecorder) Incr(ctx, key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Incr", reflect.TypeOf((*MockStore)(nil).Incr), ctx, key)
+}
+
 // Set mocks base method.
 func (m *MockStore) Set(ctx context.Context, key string, value []byte, options *kv.SetOptions) ([]byte, error) {
 	m.ctrl.T.Helper()

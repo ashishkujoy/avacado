@@ -26,6 +26,7 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 	registry.Register(expiry.NewPTTLParser())
 	registry.Register(connection.NewHelloParser())
 	registry.Register(client.NewClientParser())
+	registry.Register(kv.NewIncrParser())
 
 	return registry
 }
