@@ -52,4 +52,5 @@ type Store interface {
 	Get(ctx context.Context, key string) ([]byte, error)
 	GetTTL(key string) (int64, error)
 	Incr(ctx context.Context, key string) (int64, error)
+	Decr(ctx context.Context, key string) (int64, error)
 }
