@@ -14,9 +14,13 @@ mocks: ## Generate all mocks
 test: mocks ## Generate mocks and run all tests
 	@echo ""
 	@echo "🧪 Running tests..."
-	@go test -v ./...
-	@echo ""
-	@echo "✨ All tests completed successfully!"
+	@start_time=$$(date +%s); \
+	go test -v ./...; \
+	end_time=$$(date +%s); \
+	duration=$$((end_time - start_time)); \
+	echo ""; \
+	echo "✨ All tests completed successfully!"; \
+	echo "⏱️  Total time: $${duration}s"
 
 test-short: mocks ## Generate mocks and run tests without verbose output
 	@go test ./...
