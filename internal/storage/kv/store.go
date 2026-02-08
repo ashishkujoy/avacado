@@ -54,4 +54,5 @@ type Store interface {
 	Incr(ctx context.Context, key string) (int64, error)
 	Decr(ctx context.Context, key string) (int64, error)
 	DecrBy(ctx context.Context, key string, decrement int64) (int64, error)
+	Del(ctx context.Context, keys ...string) (int64, error)
 }

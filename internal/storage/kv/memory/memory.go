@@ -100,6 +100,22 @@ func (k *KVMemoryStore) DecrBy(ctx context.Context, key string, decrement int64)
 	return newValue, nil
 }
 
+func (k *KVMemoryStore) Del(ctx context.Context, keys ...string) (int64, error) {
+	k.mu.Lock()
+	defer k.mu.Unlock()
+
+	var deletedCount int64
+	for _, key := range keys {
+		v, ok := k.store[key]
+		// Only count as deleted if key exists and is not expired
+		if ok && !v.isExpired() {
+			delete(k.store, key)
+			deletedCount++
+		}
+	}
+	return deletedCount, nil
+}
+
 func NewKVMemoryStore() *KVMemoryStore {
 	store := &KVMemoryStore{
 		store: make(map[string]*value),

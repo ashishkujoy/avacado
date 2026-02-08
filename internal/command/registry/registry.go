@@ -29,6 +29,7 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 	registry.Register(kv.NewIncrParser())
 	registry.Register(kv.NewDecrParser())
 	registry.Register(kv.NewDecrByParser())
+	registry.Register(kv.NewDelParser())
 
 	return registry
 }

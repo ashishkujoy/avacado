@@ -351,3 +351,62 @@ func TestKVMemoryStore_DecrBy(t *testing.T) {
 	_, err = store.DecrBy(ctx, "counter3", 10)
 	assert.Error(t, err)
 }
+
+func TestKVMemoryStore_Del(t *testing.T) {
+	store := NewKVMemoryStore()
+	defer store.Close()
+	ctx := context.Background()
+
+	// Delete non-existing key should return 0
+	count, err := store.Del(ctx, "nonexistent")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), count)
+
+	// Set some keys
+	_, err = store.Set(ctx, "key1", []byte("value1"), kv.NewSetOptions())
+	assert.NoError(t, err)
+	_, err = store.Set(ctx, "key2", []byte("value2"), kv.NewSetOptions())
+	assert.NoError(t, err)
+	_, err = store.Set(ctx, "key3", []byte("value3"), kv.NewSetOptions())
+	assert.NoError(t, err)
+
+	// Delete single existing key
+	count, err = store.Del(ctx, "key1")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), count)
+
+	// Verify key is deleted
+	val, err := store.Get(ctx, "key1")
+	assert.NoError(t, err)
+	assert.Nil(t, val)
+
+	// Delete multiple existing keys
+	count, err = store.Del(ctx, "key2", "key3")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), count)
+
+	// Verify keys are deleted
+	val, err = store.Get(ctx, "key2")
+	assert.NoError(t, err)
+	assert.Nil(t, val)
+	val, err = store.Get(ctx, "key3")
+	assert.NoError(t, err)
+	assert.Nil(t, val)
+
+	// Delete mix of existing and non-existing keys
+	_, err = store.Set(ctx, "key4", []byte("value4"), kv.NewSetOptions())
+	assert.NoError(t, err)
+	count, err = store.Del(ctx, "key4", "nonexistent", "alsonothere")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), count) // Only key4 was deleted
+
+	// Delete expired key should return 0
+	_, err = store.Set(ctx, "expiring", []byte("value"), kv.NewSetOptions().WithEX(1))
+	assert.NoError(t, err)
+	pastTime := time.Now().Add(-2 * time.Second)
+	store.store["expiring"].expiry = &pastTime
+
+	count, err = store.Del(ctx, "expiring")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), count) // Expired key not counted as deleted
+}
