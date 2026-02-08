@@ -116,6 +116,21 @@ func (k *KVMemoryStore) Del(ctx context.Context, keys ...string) (int64, error) 
 	return deletedCount, nil
 }
 
+func (k *KVMemoryStore) Exists(ctx context.Context, keys ...string) (int64, error) {
+	k.mu.RLock()
+	defer k.mu.RUnlock()
+
+	var existsCount int64
+	for _, key := range keys {
+		v, ok := k.store[key]
+		// Only count as existing if key exists and is not expired
+		if ok && !v.isExpired() {
+			existsCount++
+		}
+	}
+	return existsCount, nil
+}
+
 func NewKVMemoryStore() *KVMemoryStore {
 	store := &KVMemoryStore{
 		store: make(map[string]*value),

@@ -410,3 +410,56 @@ func TestKVMemoryStore_Del(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), count) // Expired key not counted as deleted
 }
+
+func TestKVMemoryStore_Exists(t *testing.T) {
+	store := NewKVMemoryStore()
+	defer store.Close()
+	ctx := context.Background()
+
+	// Check non-existing key should return 0
+	count, err := store.Exists(ctx, "nonexistent")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), count)
+
+	// Set a key and check existence
+	_, err = store.Set(ctx, "key1", []byte("value1"), kv.NewSetOptions())
+	assert.NoError(t, err)
+	count, err = store.Exists(ctx, "key1")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(1), count)
+
+	// Check multiple keys
+	_, err = store.Set(ctx, "key2", []byte("value2"), kv.NewSetOptions())
+	assert.NoError(t, err)
+	_, err = store.Set(ctx, "key3", []byte("value3"), kv.NewSetOptions())
+	assert.NoError(t, err)
+
+	count, err = store.Exists(ctx, "key1", "key2", "key3")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), count)
+
+	// Check mix of existing and non-existing keys
+	count, err = store.Exists(ctx, "key1", "nonexistent", "key2")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), count)
+
+	// Check expired key should return 0
+	_, err = store.Set(ctx, "expiring", []byte("value"), kv.NewSetOptions().WithEX(1))
+	assert.NoError(t, err)
+	pastTime := time.Now().Add(-2 * time.Second)
+	store.store["expiring"].expiry = &pastTime
+
+	count, err = store.Exists(ctx, "expiring")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), count)
+
+	// Check duplicate keys (should count each mention)
+	count, err = store.Exists(ctx, "key1", "key1", "key1")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), count)
+
+	// Check duplicate keys with some non-existing
+	count, err = store.Exists(ctx, "key1", "nonexistent", "key1")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(2), count)
+}
