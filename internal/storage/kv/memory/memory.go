@@ -2,16 +2,68 @@ package memory
 
 import (
 	"avacado/internal/storage/kv"
+	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"strconv"
 	"sync"
 	"time"
 )
 
+type encoding byte
+
+const (
+	encodingString  encoding = iota
+	encodingInteger          = 1
+)
+
 type value struct {
 	data   []byte
+	enc    encoding
 	expiry *time.Time
+}
+
+func encodeNumber(n int64) []byte {
+	buf := new(bytes.Buffer)
+	if err := binary.Write(buf, binary.BigEndian, n); err != nil {
+		return []byte(strconv.FormatInt(n, 10))
+	}
+	return buf.Bytes()
+}
+
+func newIntegerValue(n int64) *value {
+	return &value{data: encodeNumber(n), enc: encodingInteger}
+}
+
+func newValue(data []byte, expiry *time.Time) *value {
+	// Try to parse as integer for optimized storage
+	if n, err := strconv.ParseInt(string(data), 10, 64); err == nil {
+		return &value{data: encodeNumber(n), enc: encodingInteger, expiry: expiry}
+	}
+	return &value{data: data, enc: encodingString, expiry: expiry}
+}
+
+func (v *value) AsInt64() (int64, error) {
+	if v.enc == encodingInteger {
+		var n int64
+		err := binary.Read(bytes.NewReader(v.data), binary.BigEndian, &n)
+		return n, err
+	}
+	return strconv.ParseInt(string(v.data), 10, 64)
+}
+
+func (v *value) Bytes() []byte {
+	if v.enc == encodingString {
+		return v.data
+	}
+
+	n, err := v.AsInt64()
+	if err != nil {
+		return v.data
+	}
+
+	return []byte(strconv.FormatInt(n, 10))
 }
 
 func (v *value) isExpired() bool {
@@ -34,45 +86,22 @@ func (k *KVMemoryStore) Incr(ctx context.Context, key string) (int64, error) {
 	v, ok := k.store[key]
 	if !ok || v.isExpired() {
 		// If key does not exist or is expired, initialize it to 1
-		k.store[key] = &value{data: []byte("1")}
+		k.store[key] = newValue([]byte("1"), nil)
 		return 1, nil
 	}
 
-	// Try to parse existing value as integer
-	oldValue, err := strconv.ParseInt(string(v.data), 10, 64)
+	oldValue, err := v.AsInt64()
 
 	if err != nil {
 		return 0, NewExpectsValidNumberError()
 	}
 
-	// Increment the value
-	newValue := oldValue + 1
-	v.data = []byte(fmt.Sprintf("%d", newValue))
-	return newValue, nil
+	v.data = encodeNumber(oldValue + 1)
+	return oldValue + 1, nil
 }
 
 func (k *KVMemoryStore) Decr(ctx context.Context, key string) (int64, error) {
-	k.mu.Lock()
-	defer k.mu.Unlock()
-
-	v, ok := k.store[key]
-	if !ok || v.isExpired() {
-		// If key does not exist or is expired, initialize it to -1
-		k.store[key] = &value{data: []byte("-1")}
-		return -1, nil
-	}
-
-	// Try to parse existing value as integer
-	oldValue, err := strconv.ParseInt(string(v.data), 10, 64)
-
-	if err != nil {
-		return 0, NewExpectsValidNumberError()
-	}
-
-	// Decrement the value
-	newValue := oldValue - 1
-	v.data = []byte(fmt.Sprintf("%d", newValue))
-	return newValue, nil
+	return k.DecrBy(ctx, key, 1)
 }
 
 func (k *KVMemoryStore) DecrBy(ctx context.Context, key string, decrement int64) (int64, error) {
@@ -82,22 +111,19 @@ func (k *KVMemoryStore) DecrBy(ctx context.Context, key string, decrement int64)
 	v, ok := k.store[key]
 	if !ok || v.isExpired() {
 		// If key does not exist or is expired, initialize it to 0 - decrement
-		newValue := 0 - decrement
-		k.store[key] = &value{data: []byte(fmt.Sprintf("%d", newValue))}
-		return newValue, nil
+		nv := 0 - decrement
+		k.store[key] = newIntegerValue(nv)
+		return nv, nil
 	}
 
-	// Try to parse existing value as integer
-	oldValue, err := strconv.ParseInt(string(v.data), 10, 64)
-
+	oldValue, err := v.AsInt64()
 	if err != nil {
 		return 0, NewExpectsValidNumberError()
 	}
 
-	// Decrement the value by specified amount
-	newValue := oldValue - decrement
-	v.data = []byte(fmt.Sprintf("%d", newValue))
-	return newValue, nil
+	nv := oldValue - decrement
+	v.data = encodeNumber(nv)
+	return nv, nil
 }
 
 func (k *KVMemoryStore) Del(ctx context.Context, keys ...string) (int64, error) {
@@ -172,7 +198,7 @@ func (k *KVMemoryStore) Set(_ context.Context, key string, data []byte, options 
 		expiry = &expiryTime
 	}
 
-	k.store[key] = &value{data: data, expiry: expiry}
+	k.store[key] = newValue(data, expiry)
 	var d []byte
 	if keyAlreadyExists && options.Get {
 		d = oldValue.data

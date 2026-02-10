@@ -463,3 +463,15 @@ func TestKVMemoryStore_Exists(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(2), count)
 }
+
+func TestKVMemoryStore_NumberEncoding(t *testing.T) {
+	v := newValue([]byte("123"), nil)
+	n, err := v.AsInt64()
+	assert.NoError(t, err)
+	assert.Equal(t, n, int64(123))
+
+	v.data = encodeNumber(80)
+	n, err = v.AsInt64()
+	assert.NoError(t, err)
+	assert.Equal(t, n, int64(80))
+}
