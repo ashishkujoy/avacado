@@ -186,12 +186,31 @@ func (k *KVMemoryStore) Set(_ context.Context, key string, data []byte, options 
 	k.mu.Lock()
 	defer k.mu.Unlock()
 	oldValue, keyAlreadyExists := k.store[key]
+
+	// Check if key is expired
+	if keyAlreadyExists && oldValue.isExpired() {
+		keyAlreadyExists = false
+		oldValue = nil
+	}
+
 	if keyAlreadyExists && options.NX {
 		return nil, NewKeyAlreadyExistsError(key)
 	}
 	if !keyAlreadyExists && options.XX {
 		return nil, NewKeyNotPresentError(key)
 	}
+
+	// Check IFEQ condition
+	if options.IFEQ != nil {
+		if !keyAlreadyExists {
+			return nil, NewValueMismatchError()
+		}
+		// Compare current value with IFEQ value
+		if !bytes.Equal(oldValue.Bytes(), options.IFEQ) {
+			return nil, NewValueMismatchError()
+		}
+	}
+
 	var expiry *time.Time
 	if options.EX != 0 {
 		expiryTime := time.Now().Add(time.Duration(options.EX) * time.Second)
@@ -201,7 +220,7 @@ func (k *KVMemoryStore) Set(_ context.Context, key string, data []byte, options 
 	k.store[key] = newValue(data, expiry)
 	var d []byte
 	if keyAlreadyExists && options.Get {
-		d = oldValue.data
+		d = oldValue.Bytes()
 	}
 	return d, nil
 }
@@ -218,7 +237,7 @@ func (k *KVMemoryStore) Get(_ context.Context, key string) ([]byte, error) {
 	// Check if expired while holding read lock
 	if !v.isExpired() {
 		// Happy path: key exists and not expired
-		data := v.data
+		data := v.Bytes()
 		k.mu.RUnlock()
 		return data, nil
 	}
@@ -282,4 +301,8 @@ func NewKeyNotPresentError(key string) error {
 
 func NewExpectsValidNumberError() error {
 	return fmt.Errorf("value is not an integer or out of range")
+}
+
+func NewValueMismatchError() error {
+	return fmt.Errorf("set operation failed: current value does not match IFEQ condition")
 }

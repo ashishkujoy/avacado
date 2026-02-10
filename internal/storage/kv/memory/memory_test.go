@@ -475,3 +475,104 @@ func TestKVMemoryStore_NumberEncoding(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, n, int64(80))
 }
+
+func TestKVMemoryStore_SetWithIFEQMatchingValue(t *testing.T) {
+	store := NewKVMemoryStore()
+	defer store.Close()
+	ctx := context.Background()
+
+	// Set initial value
+	_, err := store.Set(ctx, "key1", []byte("oldvalue"), kv.NewSetOptions())
+	assert.NoError(t, err)
+
+	// Set with IFEQ matching the current value
+	options := kv.NewSetOptions().WithIFEQ([]byte("oldvalue"))
+	_, err = store.Set(ctx, "key1", []byte("newvalue"), options)
+	assert.NoError(t, err)
+
+	// Verify the value was updated
+	val, err := store.Get(ctx, "key1")
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("newvalue"), val)
+}
+
+func TestKVMemoryStore_SetWithIFEQNonMatchingValue(t *testing.T) {
+	store := NewKVMemoryStore()
+	defer store.Close()
+	ctx := context.Background()
+
+	// Set initial value
+	_, err := store.Set(ctx, "key1", []byte("oldvalue"), kv.NewSetOptions())
+	assert.NoError(t, err)
+
+	// Set with IFEQ not matching the current value
+	options := kv.NewSetOptions().WithIFEQ([]byte("differentvalue"))
+	_, err = store.Set(ctx, "key1", []byte("newvalue"), options)
+	assert.Error(t, err)
+
+	// Verify the value was not updated
+	val, err := store.Get(ctx, "key1")
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("oldvalue"), val)
+}
+
+func TestKVMemoryStore_SetWithIFEQNonExistentKey(t *testing.T) {
+	store := NewKVMemoryStore()
+	defer store.Close()
+	ctx := context.Background()
+
+	// Try to set with IFEQ on non-existent key
+	options := kv.NewSetOptions().WithIFEQ([]byte("somevalue"))
+	_, err := store.Set(ctx, "nonexistent", []byte("newvalue"), options)
+	assert.Error(t, err)
+
+	// Verify the key was not created
+	val, err := store.Get(ctx, "nonexistent")
+	assert.NoError(t, err)
+	assert.Nil(t, val)
+}
+
+func TestKVMemoryStore_SetWithIFEQExpiredKey(t *testing.T) {
+	store := NewKVMemoryStore()
+	defer store.Close()
+	ctx := context.Background()
+
+	// Set a key with short expiry
+	_, err := store.Set(ctx, "key1", []byte("oldvalue"), kv.NewSetOptions().WithEX(1))
+	assert.NoError(t, err)
+
+	// Manually expire the key
+	pastTime := time.Now().Add(-2 * time.Second)
+	store.store["key1"].expiry = &pastTime
+
+	// Try to set with IFEQ on expired key (should be treated as non-existent)
+	options := kv.NewSetOptions().WithIFEQ([]byte("oldvalue"))
+	_, err = store.Set(ctx, "key1", []byte("newvalue"), options)
+	assert.Error(t, err)
+
+	// Verify the value was not updated
+	val, err := store.Get(ctx, "key1")
+	assert.NoError(t, err)
+	assert.Nil(t, val)
+}
+
+func TestKVMemoryStore_SetWithIFEQAndGet(t *testing.T) {
+	store := NewKVMemoryStore()
+	defer store.Close()
+	ctx := context.Background()
+
+	// Set initial value
+	_, err := store.Set(ctx, "key1", []byte("oldvalue"), kv.NewSetOptions())
+	assert.NoError(t, err)
+
+	// Set with IFEQ and GET option
+	options := kv.NewSetOptions().WithIFEQ([]byte("oldvalue")).WithGet()
+	oldVal, err := store.Set(ctx, "key1", []byte("newvalue"), options)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("oldvalue"), oldVal)
+
+	// Verify the value was updated
+	val, err := store.Get(ctx, "key1")
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("newvalue"), val)
+}

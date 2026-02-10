@@ -11,11 +11,12 @@ const (
 
 // SetOptions represent options supported by set command
 type SetOptions struct {
-	NX  bool
-	XX  bool
-	EX  int64
-	PX  int64
-	Get bool
+	NX   bool
+	XX   bool
+	EX   int64
+	PX   int64
+	Get  bool
+	IFEQ []byte // Set value only if current value equals this
 }
 
 func NewSetOptions() *SetOptions {
@@ -43,6 +44,12 @@ func (s *SetOptions) WithEX(time int64) *SetOptions {
 // WithGet set get option which return old value of the key if it exists
 func (s *SetOptions) WithGet() *SetOptions {
 	s.Get = true
+	return s
+}
+
+// WithIFEQ set ifeq option which allow setting value only if current value equals the provided value
+func (s *SetOptions) WithIFEQ(value []byte) *SetOptions {
+	s.IFEQ = value
 	return s
 }
 

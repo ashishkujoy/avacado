@@ -74,6 +74,18 @@ func (s SetParser) Parse(msg *protocol.Message) (command.Command, error) {
 		if argName == "GET" {
 			options = options.WithGet()
 		}
+		if argName == "IFEQ" {
+			// IFEQ expects a value in the next argument
+			if i+1 >= len(msg.Args) {
+				return nil, fmt.Errorf("set command: IFEQ option requires a value")
+			}
+			i++ // Move to the next argument
+			ifeqValue, err := msg.Args[i].AsBytes()
+			if err != nil {
+				return nil, fmt.Errorf("set command: IFEQ value parsing failed: %w", err)
+			}
+			options = options.WithIFEQ(ifeqValue)
+		}
 		// TODO: error handling for unknown arg
 	}
 	cmd.Options = options
