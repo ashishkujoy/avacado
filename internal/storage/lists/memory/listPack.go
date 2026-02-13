@@ -7,20 +7,21 @@ import (
 
 // listPack represents a list pack data structure used for storing small lists in memory.
 type listPack struct {
-	mu   sync.RWMutex
-	data []byte
+	mu      sync.RWMutex
+	data    []byte
+	maxSize int
 }
 
-func newEmptyListPack() *listPack {
-	data := make([]byte, 1024)
+func newEmptyListPack(maxSize int) *listPack {
+	data := make([]byte, maxSize)
 	binary.BigEndian.PutUint32(data[:4], 7)
 	binary.BigEndian.PutUint16(data[4:6], 0)
 	data[6] = 0xFF
-	return &listPack{data: data, mu: sync.RWMutex{}}
+	return &listPack{data: data, mu: sync.RWMutex{}, maxSize: maxSize}
 }
 
-func newListPack(elements ...[]byte) *listPack {
-	lp := newEmptyListPack()
+func newListPack(maxSize int, elements ...[]byte) *listPack {
+	lp := newEmptyListPack(maxSize)
 	lp.byteSize()
 	lp.push(elements...)
 	return lp
@@ -30,6 +31,10 @@ func (lp *listPack) length() int {
 	lp.mu.RLock()
 	defer lp.mu.RUnlock()
 	return int(binary.BigEndian.Uint16(lp.data[4:6]))
+}
+
+func (lp *listPack) isFull() bool {
+	
 }
 
 func (lp *listPack) byteSize() int {
