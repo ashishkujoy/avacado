@@ -34,7 +34,10 @@ func (lp *listPack) length() int {
 }
 
 func (lp *listPack) isFull() bool {
-	
+	lp.mu.RLock()
+	defer lp.mu.RUnlock()
+	size := int(binary.BigEndian.Uint32(lp.data[0:4]))
+	return (size*100)/lp.maxSize >= 95
 }
 
 func (lp *listPack) byteSize() int {

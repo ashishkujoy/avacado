@@ -7,19 +7,19 @@ import (
 )
 
 func TestListPack_NewEmptyListPack(t *testing.T) {
-	lp := newEmptyListPack()
+	lp := newEmptyListPack(256)
 	assert.Equal(t, 0, lp.length())
 }
 
 func TestListPack_NewListPack(t *testing.T) {
 	elements := [][]byte{[]byte("hello"), []byte("world")}
-	lp := newListPack(elements...)
+	lp := newListPack(256, elements...)
 	assert.Equal(t, 2, lp.length())
 }
 
 func TestListPack_PushElements(t *testing.T) {
 	initialElements := [][]byte{[]byte("hello"), []byte("world")}
-	lp := newListPack(initialElements...)
+	lp := newListPack(256, initialElements...)
 
 	size := lp.push([][]byte{[]byte("avacado"), []byte("listPack")}...)
 
@@ -29,7 +29,7 @@ func TestListPack_PushElements(t *testing.T) {
 
 func TestListsMemoryStore_PopElements(t *testing.T) {
 	initialElements := [][]byte{[]byte("hello"), []byte("world")}
-	lp := newListPack(initialElements...)
+	lp := newListPack(256, initialElements...)
 	lp.push([][]byte{[]byte("avacado"), []byte("listPack")}...)
 
 	elements := lp.pop(1)
