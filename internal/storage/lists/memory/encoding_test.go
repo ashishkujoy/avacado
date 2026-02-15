@@ -167,3 +167,117 @@ func TestEncoding_64BitNumber(t *testing.T) {
 	assert.Equal(t, -2147483648, value3)
 	assert.Equal(t, offset3, newOffset3)
 }
+
+func TestEncoding_6BitString(t *testing.T) {
+	buf := make([]byte, 256)
+
+	// short string, empty string, exactly 63 bytes
+	offset1, err := encode(buf, 0, []byte("hello"))
+	assert.NoError(t, err)
+
+	offset2, err := encode(buf, offset1, []byte(""))
+	assert.NoError(t, err)
+
+	pad63 := []byte("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") // 63 'a's
+	offset3, err := encode(buf, offset2, pad63)
+	assert.NoError(t, err)
+
+	v1, newOffset1, err := decode(buf, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("hello"), v1)
+	assert.Equal(t, offset1, newOffset1)
+
+	v2, newOffset2, err := decode(buf, offset1)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte(""), v2)
+	assert.Equal(t, offset2, newOffset2)
+
+	v3, newOffset3, err := decode(buf, offset2)
+	assert.NoError(t, err)
+	assert.Equal(t, pad63, v3)
+	assert.Equal(t, offset3, newOffset3)
+}
+
+func TestEncoding_12BitString(t *testing.T) {
+	buf := make([]byte, 8192)
+
+	// 64 bytes (just over 6-bit limit), 4095 bytes (12-bit max)
+	s64 := make([]byte, 64)
+	for i := range s64 {
+		s64[i] = 'x'
+	}
+	s4095 := make([]byte, 4095)
+	for i := range s4095 {
+		s4095[i] = 'y'
+	}
+
+	offset1, err := encode(buf, 0, s64)
+	assert.NoError(t, err)
+
+	offset2, err := encode(buf, offset1, s4095)
+	assert.NoError(t, err)
+
+	v1, newOffset1, err := decode(buf, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, s64, v1)
+	assert.Equal(t, offset1, newOffset1)
+
+	v2, newOffset2, err := decode(buf, offset1)
+	assert.NoError(t, err)
+	assert.Equal(t, s4095, v2)
+	assert.Equal(t, offset2, newOffset2)
+}
+
+func TestEncoding_32BitString(t *testing.T) {
+	buf := make([]byte, 8192)
+
+	// 4096 bytes (just over 12-bit limit)
+	s4096 := make([]byte, 4096)
+	for i := range s4096 {
+		s4096[i] = 'z'
+	}
+
+	offset1, err := encode(buf, 0, s4096)
+	assert.NoError(t, err)
+
+	v1, newOffset1, err := decode(buf, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, s4096, v1)
+	assert.Equal(t, offset1, newOffset1)
+}
+
+func TestEncoding_MixedStringsAndIntegers(t *testing.T) {
+	buf := make([]byte, 256)
+
+	offset1, err := encode(buf, 0, []byte("42"))
+	assert.NoError(t, err)
+
+	offset2, err := encode(buf, offset1, []byte("hello"))
+	assert.NoError(t, err)
+
+	offset3, err := encode(buf, offset2, []byte("-1000"))
+	assert.NoError(t, err)
+
+	offset4, err := encode(buf, offset3, []byte("world"))
+	assert.NoError(t, err)
+
+	v1, newOffset1, err := decode(buf, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, 42, v1)
+	assert.Equal(t, offset1, newOffset1)
+
+	v2, newOffset2, err := decode(buf, offset1)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("hello"), v2)
+	assert.Equal(t, offset2, newOffset2)
+
+	v3, newOffset3, err := decode(buf, offset2)
+	assert.NoError(t, err)
+	assert.Equal(t, -1000, v3)
+	assert.Equal(t, offset3, newOffset3)
+
+	v4, newOffset4, err := decode(buf, offset3)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("world"), v4)
+	assert.Equal(t, offset4, newOffset4)
+}

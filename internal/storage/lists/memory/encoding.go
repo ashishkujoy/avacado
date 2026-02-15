@@ -12,7 +12,10 @@ var unknownTypeError = errors.New("unknown type")
 
 // Encoding type constants
 const (
-	Encoding13bitInt = 0xC0 // 110xxxxx + 1 byte
+	Encoding6bitStr  = 0x80 // 10xxxxxx        (length in lower 6 bits)
+	Encoding12bitStr = 0xE0 // 1110xxxx xxxxxxxx (length in lower 12 bits)
+	Encoding32bitStr = 0xF0 // 11110000 + 4-byte little-endian length
+	Encoding13bitInt = 0xC0 // 110xxxxx xxxxxxxx
 	Encoding16bitInt = 0xF1 // 11110001 + 2 bytes
 	Encoding24bitInt = 0xF2 // 11110010 + 3 bytes
 	Encoding32bitInt = 0xF3 // 11110011 + 4 bytes
@@ -107,36 +110,51 @@ func encode(buf []byte, offset int, element []byte) (int, error) {
 			return encode16BitInt(buf, offset, v), nil
 		} else if v >= -8388608 && v <= 8388607 {
 			return encode24BitInt(buf, offset, v), nil
-		} else if v >= -16777216 && v <= 16777216 {
+		} else if v >= -(1<<31) && v <= (1<<31)-1 {
 			return encode32BitInt(buf, offset, v), nil
-		} else if v >= -2147483648 && v <= 2147483647 {
+		} else {
 			return encode64BitInt(buf, offset, v), nil
 		}
-		return offset, unknownTypeError
 	}
-	return offset, unknownTypeError
+
+	slen := len(element)
+	if slen <= 63 {
+		return encode6BitStr(buf, offset, element), nil
+	} else if slen <= 4095 {
+		return encode12BitStr(buf, offset, element), nil
+	}
+	return encode32BitStr(buf, offset, element), nil
 }
 
 // decode decodes an element from the buffer starting at the given offset.
 func decode(buf []byte, offset int) (interface{}, int, error) {
 	prefix := buf[offset]
 	if prefix&0x80 == 0 {
-		// 7-bit number
+		// 7-bit uint: 0xxxxxxx
 		return decode7BitInt(buf, offset)
+	} else if prefix&0xC0 == 0x80 {
+		// 6-bit string: 10xxxxxx
+		return decode6BitStr(buf, offset)
 	} else if prefix&0xE0 == 0xC0 {
-		// 13-bit number
+		// 13-bit int: 110xxxxx xxxxxxxx
 		return decode13BitInt(buf, offset)
+	} else if prefix&0xF0 == 0xE0 {
+		// 12-bit string: 1110xxxx xxxxxxxx
+		return decode12BitStr(buf, offset)
+	} else if prefix == 0xF0 {
+		// 32-bit string
+		return decode32BitStr(buf, offset)
 	} else if prefix == 0xF1 {
-		// 16-bit number
+		// 16-bit int
 		return decode16BitInt(buf, offset)
 	} else if prefix == 0xF2 {
-		// 24-bit number
+		// 24-bit int
 		return decode24BitInt(buf, offset)
 	} else if prefix == 0xF3 {
-		// 32-bit number
+		// 32-bit int
 		return decode32BitInt(buf, offset)
 	} else if prefix == 0xF4 {
-		// 64-bit number
+		// 64-bit int
 		return decode64BitInt(buf, offset)
 	}
 	return nil, offset, unknownEncodingError
@@ -335,16 +353,7 @@ func decode24BitInt(buf []byte, offset int) (int, int, error) {
 	}
 
 	result := int(int32(val))
-	offset += 4
-
-	// Decode backLen to skip past it
-	for offset < len(buf) {
-		if buf[offset]&0x80 == 0 {
-			offset++
-			break
-		}
-		offset++
-	}
+	offset += 5
 
 	return result, offset, nil
 }
@@ -415,6 +424,132 @@ func decode64BitInt(buf []byte, offset int) (int, int, error) {
 	val := binary.LittleEndian.Uint64(buf[offset+1:])
 	result := int(int64(val))
 	offset += 10
+
+	return result, offset, nil
+}
+
+// encode6BitStr encodes a string of up to 63 bytes with backLen
+// Format: 10xxxxxx [data...] <backLen>
+// Entry structure: encoding(1) + data(slen) + backLen
+func encode6BitStr(buf []byte, offset int, s []byte) int {
+	slen := len(s)
+	buf[offset] = Encoding6bitStr | byte(slen)
+	offset++
+	copy(buf[offset:], s)
+	offset += slen
+
+	entryLen := uint64(1 + slen)
+	backLenSize := lpEncodeBackLen(buf, offset, entryLen)
+	offset += backLenSize
+
+	return offset
+}
+
+// decode6BitStr decodes a 6-bit string with backLen
+func decode6BitStr(buf []byte, offset int) ([]byte, int, error) {
+	if offset >= len(buf) {
+		return nil, offset, fmt.Errorf("buffer overflow at offset %d", offset)
+	}
+
+	slen := int(buf[offset] & 0x3F)
+	offset++
+
+	if offset+slen > len(buf) {
+		return nil, offset, fmt.Errorf("buffer overflow reading %d bytes at offset %d", slen, offset)
+	}
+
+	result := make([]byte, slen)
+	copy(result, buf[offset:offset+slen])
+	offset += slen
+
+	backLenSize := getBackLenSize(uint64(1 + slen))
+	offset += backLenSize
+
+	return result, offset, nil
+}
+
+// encode12BitStr encodes a string of up to 4095 bytes with backLen
+// Format: 1110xxxx xxxxxxxx [data...] <backLen>
+// Entry structure: encoding(2) + data(slen) + backLen
+func encode12BitStr(buf []byte, offset int, s []byte) int {
+	slen := len(s)
+	buf[offset] = Encoding12bitStr | byte(slen>>8)
+	buf[offset+1] = byte(slen & 0xFF)
+	offset += 2
+	copy(buf[offset:], s)
+	offset += slen
+
+	entryLen := uint64(2 + slen)
+	backLenSize := lpEncodeBackLen(buf, offset, entryLen)
+	offset += backLenSize
+
+	return offset
+}
+
+// decode12BitStr decodes a 12-bit string with backLen
+func decode12BitStr(buf []byte, offset int) ([]byte, int, error) {
+	if offset+1 >= len(buf) {
+		return nil, offset, fmt.Errorf("buffer overflow at offset %d", offset)
+	}
+
+	slen := int(buf[offset]&0x0F)<<8 | int(buf[offset+1])
+	offset += 2
+
+	if offset+slen > len(buf) {
+		return nil, offset, fmt.Errorf("buffer overflow reading %d bytes at offset %d", slen, offset)
+	}
+
+	result := make([]byte, slen)
+	copy(result, buf[offset:offset+slen])
+	offset += slen
+
+	backLenSize := getBackLenSize(uint64(2 + slen))
+	offset += backLenSize
+
+	return result, offset, nil
+}
+
+// encode32BitStr encodes a string of any length with backLen
+// Format: 0xF0 [4-byte little-endian length] [data...] <backLen>
+// Entry structure: encoding(1) + length(4) + data(slen) + backLen
+func encode32BitStr(buf []byte, offset int, s []byte) int {
+	slen := len(s)
+	buf[offset] = Encoding32bitStr
+	binary.LittleEndian.PutUint32(buf[offset+1:], uint32(slen))
+	offset += 5
+	copy(buf[offset:], s)
+	offset += slen
+
+	entryLen := uint64(5 + slen)
+	backLenSize := lpEncodeBackLen(buf, offset, entryLen)
+	offset += backLenSize
+
+	return offset
+}
+
+// decode32BitStr decodes a 32-bit string with backLen
+func decode32BitStr(buf []byte, offset int) ([]byte, int, error) {
+	if offset+4 >= len(buf) {
+		return nil, offset, fmt.Errorf("buffer overflow at offset %d", offset)
+	}
+
+	if buf[offset] != Encoding32bitStr {
+		return nil, offset, fmt.Errorf("not a 32-bit string encoding at offset %d", offset)
+	}
+
+	slen := int(binary.LittleEndian.Uint32(buf[offset+1:]))
+	offset += 5
+
+	if offset+slen > len(buf) {
+		return nil, offset, fmt.Errorf("buffer overflow reading %d bytes at offset %d", slen, offset)
+	}
+
+	result := make([]byte, slen)
+	copy(result, buf[offset:offset+slen])
+	offset += slen
+
+	backLenSize := getBackLenSize(uint64(5 + slen))
+	offset += backLenSize
 
 	return result, offset, nil
 }
