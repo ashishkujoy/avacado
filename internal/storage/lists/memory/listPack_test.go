@@ -46,3 +46,4 @@ func TestListsMemoryStore_PopElements(t *testing.T) {
 	assert.Equal(t, []byte("hello"), elements[0])
 	assert.Equal(t, 0, lp.length())
 }
+
