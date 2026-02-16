@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -246,38 +247,130 @@ func TestEncoding_32BitString(t *testing.T) {
 	assert.Equal(t, offset1, newOffset1)
 }
 
-func TestEncoding_MixedStringsAndIntegers(t *testing.T) {
-	buf := make([]byte, 256)
+func TestTraverse(t *testing.T) {
+	t.Run("Traverse mixed values", func(t *testing.T) {
+		buf := make([]byte, 256000)
+		offset1, err := encode(buf, 0, []byte("42"))
+		assert.NoError(t, err)
+		offset2, err := encode(buf, offset1, []byte("190"))
+		assert.NoError(t, err)
+		offset3, err := encode(buf, offset2, []byte("-32768"))
+		assert.NoError(t, err)
+		offset4, err := encode(buf, offset3, []byte("8388608"))
+		assert.NoError(t, err)
+		offset5, err := encode(buf, offset4, []byte("Hi"))
+		assert.NoError(t, err)
+		str12Bit := newStringOfLength(64)
+		offset6, err := encode(buf, offset5, str12Bit)
+		assert.NoError(t, err)
+		str32Bit := newStringOfLength(4096)
+		offset7, err := encode(buf, offset6, str32Bit)
+		assert.NoError(t, err)
 
-	offset1, err := encode(buf, 0, []byte("42"))
-	assert.NoError(t, err)
+		var got []interface{}
+		err = traverse(buf[:offset7], 0, func(el interface{}) error {
+			got = append(got, el)
+			return nil
+		})
+		assert.NoError(t, err)
+		expected := []interface{}{42, 190, -32768, 8388608, []byte("Hi"), str12Bit, str32Bit}
+		assert.Equal(t, expected, got)
+	})
 
-	offset2, err := encode(buf, offset1, []byte("hello"))
-	assert.NoError(t, err)
+	t.Run("empty buffer", func(t *testing.T) {
+		var got []interface{}
+		err := traverse([]byte{}, 0, func(el interface{}) error {
+			got = append(got, el)
+			return nil
+		})
+		assert.NoError(t, err)
+		assert.Empty(t, got)
+	})
 
-	offset3, err := encode(buf, offset2, []byte("-1000"))
-	assert.NoError(t, err)
+	t.Run("callback error stops traversal", func(t *testing.T) {
+		buf := make([]byte, 256)
+		offset1, err := encode(buf, 0, []byte("1"))
+		assert.NoError(t, err)
+		offset2, err := encode(buf, offset1, []byte("2"))
+		assert.NoError(t, err)
+		_, err = encode(buf, offset2, []byte("3"))
+		assert.NoError(t, err)
 
-	offset4, err := encode(buf, offset3, []byte("world"))
-	assert.NoError(t, err)
+		var got []interface{}
+		sentinel := errors.New("stop")
+		err = traverse(buf[:offset2], 0, func(el interface{}) error {
+			got = append(got, el)
+			return sentinel
+		})
+		assert.ErrorIs(t, err, sentinel)
+		assert.Len(t, got, 1)
+	})
+}
 
-	v1, newOffset1, err := decode(buf, 0)
-	assert.NoError(t, err)
-	assert.Equal(t, 42, v1)
-	assert.Equal(t, offset1, newOffset1)
+func TestTraverseReverse(t *testing.T) {
+	t.Run("Traverse reverse mixed values", func(t *testing.T) {
+		buf := make([]byte, 256000)
+		offset1, err := encode(buf, 0, []byte("42"))
+		assert.NoError(t, err)
+		offset2, err := encode(buf, offset1, []byte("190"))
+		assert.NoError(t, err)
+		offset3, err := encode(buf, offset2, []byte("-32768"))
+		assert.NoError(t, err)
+		offset4, err := encode(buf, offset3, []byte("8388608"))
+		assert.NoError(t, err)
+		offset5, err := encode(buf, offset4, []byte("Hi"))
+		assert.NoError(t, err)
+		str12Bit := newStringOfLength(64)
+		offset6, err := encode(buf, offset5, str12Bit)
+		assert.NoError(t, err)
+		str32Bit := newStringOfLength(4096)
+		offset7, err := encode(buf, offset6, str32Bit)
+		assert.NoError(t, err)
 
-	v2, newOffset2, err := decode(buf, offset1)
-	assert.NoError(t, err)
-	assert.Equal(t, []byte("hello"), v2)
-	assert.Equal(t, offset2, newOffset2)
+		var got []interface{}
+		err = traverseReverse(buf[:offset7], offset7-1, func(el interface{}) error {
+			got = append(got, el)
+			return nil
+		})
+		assert.NoError(t, err)
+		expected := []interface{}{str32Bit, str12Bit, []byte("Hi"), 8388608, -32768, 190, 42}
+		assert.Equal(t, expected, got)
+	})
 
-	v3, newOffset3, err := decode(buf, offset2)
-	assert.NoError(t, err)
-	assert.Equal(t, -1000, v3)
-	assert.Equal(t, offset3, newOffset3)
+	t.Run("empty buffer", func(t *testing.T) {
+		var got []interface{}
+		err := traverseReverse([]byte{}, -1, func(el interface{}) error {
+			got = append(got, el)
+			return nil
+		})
+		assert.NoError(t, err)
+		assert.Empty(t, got)
+	})
 
-	v4, newOffset4, err := decode(buf, offset3)
-	assert.NoError(t, err)
-	assert.Equal(t, []byte("world"), v4)
-	assert.Equal(t, offset4, newOffset4)
+	t.Run("callback error stops traversal", func(t *testing.T) {
+		buf := make([]byte, 256)
+		offset1, err := encode(buf, 0, []byte("1"))
+		assert.NoError(t, err)
+		offset2, err := encode(buf, offset1, []byte("2"))
+		assert.NoError(t, err)
+		offset3, err := encode(buf, offset2, []byte("3"))
+		assert.NoError(t, err)
+
+		var got []interface{}
+		sentinel := errors.New("stop")
+		err = traverseReverse(buf[:offset3], offset3-1, func(el interface{}) error {
+			got = append(got, el)
+			return sentinel
+		})
+		assert.ErrorIs(t, err, sentinel)
+		assert.Len(t, got, 1)
+	})
+}
+
+func newStringOfLength(n int) []byte {
+	buf := make([]byte, n)
+	for i := range buf {
+		buf[i] = 'x'
+	}
+	return buf
 }
