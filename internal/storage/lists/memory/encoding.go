@@ -529,53 +529,65 @@ func encode32BitStr(buf []byte, offset int, s []byte) int {
 
 // traverse iterates over the buffer from left to right starting at the given offset,
 // decoding each entry and calling fn with the decoded value.
-// Traversal stops at the end of the buffer or if fn returns an error.
-func traverse(buf []byte, offset int, fn func(element interface{}) error) error {
+// fn returns (continue bool, error). Traversal stops when fn returns false, fn returns
+// an error, or the end of the buffer is reached.
+// Returns the offset at which traversal ended and any error.
+func traverse(buf []byte, offset int, fn func(element interface{}) (bool, error)) (int, error) {
 	for offset < len(buf) {
 		value, newOffset, err := decode(buf, offset)
 		if err != nil {
-			return err
+			return offset, err
 		}
-		if err := fn(value); err != nil {
-			return err
+		cont, err := fn(value)
+		if err != nil {
+			return offset, err
 		}
 		offset = newOffset
+		if !cont {
+			break
+		}
 	}
-	return nil
+	return offset, nil
 }
 
 // traverseReverse iterates over the buffer from right to left starting at the given offset,
 // which must point to the last byte of the last entry's backLen field.
 // It uses backLen to locate each entry's start, decodes it, and calls fn with the decoded value.
-// Traversal stops when the beginning of the buffer is reached or fn returns an error.
-func traverseReverse(buf []byte, offset int, fn func(element interface{}) error) error {
+// fn returns (continue bool, error). Traversal stops when fn returns false, fn returns
+// an error, or the beginning of the buffer is reached.
+// Returns the cursor offset at which traversal ended and any error.
+func traverseReverse(buf []byte, offset int, fn func(element interface{}) (bool, error)) (int, error) {
 	cursor := offset
 	for cursor >= 0 {
 		entryLen, backLenSize, err := lpDecodeBackLen(buf, cursor)
 		if err != nil {
-			return err
+			return cursor, err
 		}
 
 		// Entry occupies [entryStart .. cursor-backLenSize],
 		// backLen occupies [cursor-backLenSize+1 .. cursor].
 		entryStart := cursor - backLenSize - int(entryLen) + 1
 		if entryStart < 0 {
-			return fmt.Errorf("invalid buffer: entry start %d out of bounds", entryStart)
+			return cursor, fmt.Errorf("invalid buffer: entry start %d out of bounds", entryStart)
 		}
 
 		value, _, err := decode(buf, entryStart)
 		if err != nil {
-			return err
+			return cursor, err
 		}
 
-		if err := fn(value); err != nil {
-			return err
+		cont, err := fn(value)
+		if err != nil {
+			return cursor, err
 		}
 
 		// Move cursor to the last byte of the previous entry's backLen.
 		cursor = entryStart - 1
+		if !cont {
+			break
+		}
 	}
-	return nil
+	return cursor, nil
 }
 
 // decode32BitStr decodes a 32-bit string with backLen

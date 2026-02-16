@@ -268,22 +268,24 @@ func TestTraverse(t *testing.T) {
 		assert.NoError(t, err)
 
 		var got []interface{}
-		err = traverse(buf[:offset7], 0, func(el interface{}) error {
+		endOffset, err := traverse(buf[:offset7], 0, func(el interface{}) (bool, error) {
 			got = append(got, el)
-			return nil
+			return true, nil
 		})
 		assert.NoError(t, err)
+		assert.Equal(t, offset7, endOffset)
 		expected := []interface{}{42, 190, -32768, 8388608, []byte("Hi"), str12Bit, str32Bit}
 		assert.Equal(t, expected, got)
 	})
 
 	t.Run("empty buffer", func(t *testing.T) {
 		var got []interface{}
-		err := traverse([]byte{}, 0, func(el interface{}) error {
+		endOffset, err := traverse([]byte{}, 0, func(el interface{}) (bool, error) {
 			got = append(got, el)
-			return nil
+			return true, nil
 		})
 		assert.NoError(t, err)
+		assert.Equal(t, 0, endOffset)
 		assert.Empty(t, got)
 	})
 
@@ -298,11 +300,30 @@ func TestTraverse(t *testing.T) {
 
 		var got []interface{}
 		sentinel := errors.New("stop")
-		err = traverse(buf[:offset2], 0, func(el interface{}) error {
+		_, err = traverse(buf[:offset2], 0, func(el interface{}) (bool, error) {
 			got = append(got, el)
-			return sentinel
+			return true, sentinel
 		})
 		assert.ErrorIs(t, err, sentinel)
+		assert.Len(t, got, 1)
+	})
+
+	t.Run("callback false stops traversal", func(t *testing.T) {
+		buf := make([]byte, 256)
+		offset1, err := encode(buf, 0, []byte("1"))
+		assert.NoError(t, err)
+		offset2, err := encode(buf, offset1, []byte("2"))
+		assert.NoError(t, err)
+		_, err = encode(buf, offset2, []byte("3"))
+		assert.NoError(t, err)
+
+		var got []interface{}
+		endOffset, err := traverse(buf[:offset2], 0, func(el interface{}) (bool, error) {
+			got = append(got, el)
+			return false, nil
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, offset1, endOffset)
 		assert.Len(t, got, 1)
 	})
 }
@@ -328,22 +349,24 @@ func TestTraverseReverse(t *testing.T) {
 		assert.NoError(t, err)
 
 		var got []interface{}
-		err = traverseReverse(buf[:offset7], offset7-1, func(el interface{}) error {
+		endOffset, err := traverseReverse(buf[:offset7], offset7-1, func(el interface{}) (bool, error) {
 			got = append(got, el)
-			return nil
+			return true, nil
 		})
 		assert.NoError(t, err)
+		assert.Equal(t, -1, endOffset)
 		expected := []interface{}{str32Bit, str12Bit, []byte("Hi"), 8388608, -32768, 190, 42}
 		assert.Equal(t, expected, got)
 	})
 
 	t.Run("empty buffer", func(t *testing.T) {
 		var got []interface{}
-		err := traverseReverse([]byte{}, -1, func(el interface{}) error {
+		endOffset, err := traverseReverse([]byte{}, -1, func(el interface{}) (bool, error) {
 			got = append(got, el)
-			return nil
+			return true, nil
 		})
 		assert.NoError(t, err)
+		assert.Equal(t, -1, endOffset)
 		assert.Empty(t, got)
 	})
 
@@ -358,14 +381,46 @@ func TestTraverseReverse(t *testing.T) {
 
 		var got []interface{}
 		sentinel := errors.New("stop")
-		err = traverseReverse(buf[:offset3], offset3-1, func(el interface{}) error {
+		_, err = traverseReverse(buf[:offset3], offset3-1, func(el interface{}) (bool, error) {
 			got = append(got, el)
-			return sentinel
+			return true, sentinel
 		})
 		assert.ErrorIs(t, err, sentinel)
 		assert.Len(t, got, 1)
 	})
+
+	t.Run("callback false stops traversal", func(t *testing.T) {
+		buf := make([]byte, 256)
+		offset1, err := encode(buf, 0, []byte("1"))
+		assert.NoError(t, err)
+		offset2, err := encode(buf, offset1, []byte("2"))
+		assert.NoError(t, err)
+		offset3, err := encode(buf, offset2, []byte("3"))
+		assert.NoError(t, err)
+
+		var got []interface{}
+		endOffset, err := traverseReverse(buf[:offset3], offset3-1, func(el interface{}) (bool, error) {
+			got = append(got, el)
+			return false, nil
+		})
+		assert.NoError(t, err)
+		assert.Equal(t, offset2-1, endOffset)
+		assert.Len(t, got, 1)
+	})
 }
+
+// decodeAt is a helper that resolves a backLen cursor to the decoded entry value.
+// cursor must point to the last byte of an entry's backLen field.
+func decodeAt(buf []byte, cursor int) (interface{}, error) {
+	entryLen, backLenSize, err := lpDecodeBackLen(buf, cursor)
+	if err != nil {
+		return nil, err
+	}
+	entryStart := cursor - backLenSize - int(entryLen) + 1
+	value, _, err := decode(buf, entryStart)
+	return value, err
+}
+
 
 func newStringOfLength(n int) []byte {
 	buf := make([]byte, n)

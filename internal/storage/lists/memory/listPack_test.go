@@ -21,7 +21,8 @@ func TestListPack_PushElements(t *testing.T) {
 	initialElements := [][]byte{[]byte("hello"), []byte("world")}
 	lp := newListPack(256, initialElements...)
 
-	size := lp.push([][]byte{[]byte("avacado"), []byte("listPack")}...)
+	size, err := lp.push([][]byte{[]byte("avacado"), []byte("listPack")}...)
+	assert.NoError(t, err)
 
 	assert.Equal(t, 4, size)
 	assert.Equal(t, 4, lp.length())
