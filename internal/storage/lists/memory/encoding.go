@@ -99,8 +99,43 @@ func lpDecodeBackLen(buf []byte, offset int) (uint64, int, error) {
 	return entryLen, bytesRead, nil
 }
 
+// encodedSize returns the exact number of bytes that encode() will write for element,
+// including header, data, and backlen fields. Mirrors encode()'s type-selection logic
+// and is used for pre-flight capacity checks before writing.
+func encodedSize(element []byte) int {
+	if v, err := strconv.Atoi(string(element)); err == nil {
+		switch {
+		case v >= 0 && v <= 127:
+			return 2 // 1-byte enc + 1-byte backlen
+		case v >= -4096 && v <= 4095:
+			return 3 // 2-byte enc + 1-byte backlen
+		case v >= -32768 && v <= 32767:
+			return 4 // 1-byte marker + 2-byte data + 1-byte backlen
+		case v >= -8388608 && v <= 8388607:
+			return 5 // 1 + 3 + 1
+		case v >= -(1<<31) && v <= (1<<31)-1:
+			return 6 // 1 + 4 + 1
+		default:
+			return 10 // 1 + 8 + 1
+		}
+	}
+	slen := len(element)
+	if slen <= 63 {
+		return 1 + slen + getBackLenSize(uint64(1+slen))
+	} else if slen <= 4095 {
+		return 2 + slen + getBackLenSize(uint64(2+slen))
+	}
+	return 5 + slen + getBackLenSize(uint64(5+slen))
+}
+
 // encode determines the type of the element and encodes it into the buffer starting at the given offset.
+// Returns an error if the encoded bytes would exceed the buffer bounds.
 func encode(buf []byte, offset int, element []byte) (int, error) {
+	needed := encodedSize(element)
+	if offset+needed > len(buf) {
+		return offset, fmt.Errorf("listpack overflow: need %d bytes at offset %d, buffer size %d", needed, offset, len(buf))
+	}
+
 	if v, err := strconv.Atoi(string(element)); err == nil {
 		if v >= 0 && v <= 127 {
 			return encode7BitInt(buf, offset, v), nil

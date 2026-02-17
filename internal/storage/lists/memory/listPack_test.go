@@ -61,6 +61,63 @@ func TestListsMemoryStore_LPush(t *testing.T) {
 	assert.Equal(t, []byte("-124"), elements[3])
 }
 
+func TestListPack_PushOverflow(t *testing.T) {
+	t.Run("single value too large for empty listpack", func(t *testing.T) {
+		// maxSize=10: freeBytes = 10-7 = 3; "hello" needs 7 bytes
+		lp := newEmptyListPack(10)
+		count, err := lp.push([]byte("hello"))
+		assert.Error(t, err)
+		assert.Equal(t, 0, count)   // original elemCount returned
+		assert.Equal(t, 0, lp.length()) // listpack not modified
+	})
+
+	t.Run("second value overflows, first value committed", func(t *testing.T) {
+		// maxSize=19: freeBytes=12; "hello"(7) fits → totalSize=14, freeBytes=5; second "hello"(7) doesn't
+		lp := newEmptyListPack(19)
+		count, err := lp.push([]byte("hello"))
+		assert.NoError(t, err)
+		assert.Equal(t, 1, count)
+
+		count, err = lp.push([]byte("hello"))
+		assert.Error(t, err)
+		assert.Equal(t, 1, count)   // original elemCount before failed push
+		assert.Equal(t, 1, lp.length()) // first value still intact
+	})
+
+	t.Run("listpack not corrupted after overflow error", func(t *testing.T) {
+		lp := newEmptyListPack(19)
+		_, _ = lp.push([]byte("hello"))
+		_, _ = lp.push([]byte("hello")) // overflows, ignored
+
+		// original element still readable
+		elems := lp.pop(1)
+		assert.Equal(t, []byte("hello"), elems[0])
+	})
+}
+
+func TestListPack_LPushOverflow(t *testing.T) {
+	t.Run("single value too large for empty listpack", func(t *testing.T) {
+		// maxSize=10: freeBytes=3; "hello" needs 7 bytes
+		lp := newEmptyListPack(10)
+		count, err := lp.lPush([]byte("hello"))
+		assert.Error(t, err)
+		assert.Equal(t, 0, count)
+		assert.Equal(t, 0, lp.length())
+	})
+
+	t.Run("second value overflows, first value committed", func(t *testing.T) {
+		lp := newEmptyListPack(19)
+		count, err := lp.lPush([]byte("hello"))
+		assert.NoError(t, err)
+		assert.Equal(t, 1, count)
+
+		count, err = lp.lPush([]byte("hello"))
+		assert.Error(t, err)
+		assert.Equal(t, 1, count)
+		assert.Equal(t, 1, lp.length())
+	})
+}
+
 func TestListsMemoryStore_LPop(t *testing.T) {
 	elements := [][]byte{[]byte("hello"), []byte("world"), []byte("124"), []byte("JamesBond")}
 	lp := newListPack(1024, elements...)

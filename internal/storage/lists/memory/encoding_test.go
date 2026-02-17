@@ -409,6 +409,83 @@ func TestTraverseReverse(t *testing.T) {
 	})
 }
 
+func TestEncode_Overflow(t *testing.T) {
+	t.Run("integer too large for buffer", func(t *testing.T) {
+		buf := make([]byte, 1) // "42" needs 2 bytes (7-bit int + backlen)
+		offset, err := encode(buf, 0, []byte("42"))
+		assert.Error(t, err)
+		assert.Equal(t, 0, offset) // offset unchanged on error
+	})
+
+	t.Run("string too large for buffer", func(t *testing.T) {
+		buf := make([]byte, 6) // "hello" needs 7 bytes (1 header + 5 data + 1 backlen)
+		offset, err := encode(buf, 0, []byte("hello"))
+		assert.Error(t, err)
+		assert.Equal(t, 0, offset)
+	})
+
+	t.Run("integer exact fit", func(t *testing.T) {
+		buf := make([]byte, 2) // exactly enough for "42"
+		offset, err := encode(buf, 0, []byte("42"))
+		assert.NoError(t, err)
+		assert.Equal(t, 2, offset)
+	})
+
+	t.Run("string exact fit", func(t *testing.T) {
+		buf := make([]byte, 7) // exactly enough for "hello"
+		offset, err := encode(buf, 0, []byte("hello"))
+		assert.NoError(t, err)
+		assert.Equal(t, 7, offset)
+	})
+
+	t.Run("second encode overflows after first succeeds", func(t *testing.T) {
+		// "42" (2 bytes) fits at offset 0; "hello" (7 bytes) at offset 2 needs 9 total — only 8 available
+		buf := make([]byte, 8)
+		offset, err := encode(buf, 0, []byte("42"))
+		assert.NoError(t, err)
+		_, err = encode(buf, offset, []byte("hello"))
+		assert.Error(t, err)
+		// buffer must not be corrupted: first entry still decodable
+		v, _, err := decode(buf, 0)
+		assert.NoError(t, err)
+		assert.Equal(t, 42, v)
+	})
+
+	t.Run("zero-length buffer", func(t *testing.T) {
+		buf := make([]byte, 0)
+		_, err := encode(buf, 0, []byte("1"))
+		assert.Error(t, err)
+	})
+}
+
+func TestEncodedSize(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    []byte
+		expected int
+	}{
+		{"7-bit int", []byte("0"), 2},
+		{"7-bit int max", []byte("127"), 2},
+		{"13-bit int", []byte("128"), 3},
+		{"13-bit int max", []byte("4095"), 3},
+		{"16-bit int", []byte("4096"), 4},
+		{"16-bit int max", []byte("32767"), 4},
+		{"24-bit int", []byte("32768"), 5},
+		{"24-bit int max", []byte("8388607"), 5},
+		{"32-bit int", []byte("8388608"), 6},
+		{"64-bit int", []byte("2147483648"), 10},
+		{"6-bit string empty", []byte(""), 2},   // 1 header + 0 data + 1 backlen
+		{"6-bit string hello", []byte("hello"), 7}, // 1 + 5 + 1
+		{"6-bit string max (63 bytes)", newStringOfLength(63), 65}, // 1 + 63 + 1
+		{"12-bit string (64 bytes)", newStringOfLength(64), 67},    // 2 + 64 + 1
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, encodedSize(tt.input))
+		})
+	}
+}
+
 // decodeAt is a helper that resolves a backLen cursor to the decoded entry value.
 // cursor must point to the last byte of an entry's backLen field.
 func decodeAt(buf []byte, cursor int) (interface{}, error) {
