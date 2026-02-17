@@ -24,7 +24,7 @@ func newEmptyListPack(maxSize int) *listPack {
 func newListPack(maxSize int, elements ...[]byte) *listPack {
 	lp := newEmptyListPack(maxSize)
 	lp.byteSize()
-	lp.push(elements...)
+	_, _ = lp.push(elements...)
 	return lp
 }
 
@@ -105,4 +105,35 @@ func (lp *listPack) pop(count int) [][]byte {
 	binary.BigEndian.PutUint32(lp.data[0:4], uint32(newTerminator+1))
 	binary.BigEndian.PutUint16(lp.data[4:6], uint16(lp.length()-count))
 	return elements
+}
+
+func (lp *listPack) lPush(values ...[]byte) (int, error) {
+	lp.mu.Lock()
+	defer lp.mu.Unlock()
+	elemCount := int(binary.BigEndian.Uint16(lp.data[4:6]))
+	newElemCount := elemCount + len(values)
+
+	bytesSize := int(binary.BigEndian.Uint32(lp.data[:4]))
+	tempBufSize := lp.maxSize - bytesSize
+	tempBuf := make([]byte, tempBufSize)
+	tempBufOffset := 0
+	// Encode new values into tempBuf, starting from the beginning. If we exceed tempBufSize, we know we can't fit all values.
+	for i := len(values) - 1; i >= 0; i-- {
+		newOffset, err := encode(tempBuf, tempBufOffset, values[i])
+		if err != nil {
+			return elemCount, err
+		}
+		tempBufOffset = newOffset
+	}
+	if tempBufOffset > tempBufSize {
+		return elemCount, fmt.Errorf("list pack overflow: cannot fit all new values")
+	}
+
+	// Shift existing data to the right to make room for new entries at the beginning.
+	copy(lp.data[6+tempBufOffset:], lp.data[6:bytesSize])
+	// Copy new entries from tempBuf to the beginning of the list pack data area.
+	copy(lp.data[6:], tempBuf[:tempBufOffset])
+	binary.BigEndian.PutUint32(lp.data[:4], uint32(bytesSize+tempBufOffset))
+	binary.BigEndian.PutUint16(lp.data[4:6], uint16(newElemCount))
+	return newElemCount, nil
 }

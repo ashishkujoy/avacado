@@ -48,3 +48,15 @@ func TestListsMemoryStore_PopElements(t *testing.T) {
 	assert.Equal(t, 0, lp.length())
 }
 
+func TestListsMemoryStore_LPush(t *testing.T) {
+	lp := newEmptyListPack(1024)
+	lp.push([][]byte{[]byte("world"), []byte("-124")}...)
+	lp.lPush([]byte("hello"), []byte("1231313"))
+
+	assert.Equal(t, 4, lp.length())
+	elements := lp.pop(4)
+	assert.Equal(t, []byte("1231313"), elements[0])
+	assert.Equal(t, []byte("hello"), elements[1])
+	assert.Equal(t, []byte("world"), elements[2])
+	assert.Equal(t, []byte("-124"), elements[3])
+}
