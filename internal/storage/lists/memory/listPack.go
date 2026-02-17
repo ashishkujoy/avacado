@@ -24,7 +24,9 @@ func newEmptyListPack(maxSize int) *listPack {
 func newListPack(maxSize int, elements ...[]byte) *listPack {
 	lp := newEmptyListPack(maxSize)
 	lp.byteSize()
-	_, _ = lp.push(elements...)
+	for _, e := range elements {
+		_, _ = lp.push(e)
+	}
 	return lp
 }
 
@@ -47,25 +49,21 @@ func (lp *listPack) byteSize() int {
 	return int(binary.BigEndian.Uint32(lp.data[:4]))
 }
 
-func (lp *listPack) push(values ...[]byte) (int, error) {
+func (lp *listPack) push(value []byte) (int, error) {
 	lp.mu.Lock()
 	defer lp.mu.Unlock()
 	elemCount := int(binary.BigEndian.Uint16(lp.data[4:6]))
-	newElemCount := elemCount + len(values)
 
 	offset := int(binary.BigEndian.Uint32(lp.data[:4])) - 1
-	for _, value := range values {
-		newOffset, err := encode(lp.data, offset, value)
-		if err != nil {
-			return elemCount, err
-		}
-		offset = newOffset
+	newOffset, err := encode(lp.data, offset, value)
+	if err != nil {
+		return elemCount, err
 	}
-	lp.data[offset] = 0xFF
-	offset += 1
-	binary.BigEndian.PutUint32(lp.data[:4], uint32(offset))
-	binary.BigEndian.PutUint16(lp.data[4:6], uint16(newElemCount))
-	return newElemCount, nil
+	lp.data[newOffset] = 0xFF
+	newOffset++
+	binary.BigEndian.PutUint32(lp.data[:4], uint32(newOffset))
+	binary.BigEndian.PutUint16(lp.data[4:6], uint16(elemCount+1))
+	return elemCount + 1, nil
 }
 
 func (lp *listPack) pop(count int) [][]byte {
@@ -107,35 +105,25 @@ func (lp *listPack) pop(count int) [][]byte {
 	return elements
 }
 
-func (lp *listPack) lPush(values ...[]byte) (int, error) {
+func (lp *listPack) lPush(value []byte) (int, error) {
 	lp.mu.Lock()
 	defer lp.mu.Unlock()
 	elemCount := int(binary.BigEndian.Uint16(lp.data[4:6]))
-	newElemCount := elemCount + len(values)
 
 	bytesSize := int(binary.BigEndian.Uint32(lp.data[:4]))
-	tempBufSize := lp.maxSize - bytesSize
-	tempBuf := make([]byte, tempBufSize)
-	tempBufOffset := 0
-	// Encode new values into tempBuf, starting from the beginning. If we exceed tempBufSize, we know we can't fit all values.
-	for i := len(values) - 1; i >= 0; i-- {
-		newOffset, err := encode(tempBuf, tempBufOffset, values[i])
-		if err != nil {
-			return elemCount, err
-		}
-		tempBufOffset = newOffset
-	}
-	if tempBufOffset > tempBufSize {
-		return elemCount, fmt.Errorf("list pack overflow: cannot fit all new values")
+	tempBuf := make([]byte, lp.maxSize-bytesSize)
+	newOffset, err := encode(tempBuf, 0, value)
+	if err != nil {
+		return elemCount, err
 	}
 
-	// Shift existing data to the right to make room for new entries at the beginning.
-	copy(lp.data[6+tempBufOffset:], lp.data[6:bytesSize])
-	// Copy new entries from tempBuf to the beginning of the list pack data area.
-	copy(lp.data[6:], tempBuf[:tempBufOffset])
-	binary.BigEndian.PutUint32(lp.data[:4], uint32(bytesSize+tempBufOffset))
-	binary.BigEndian.PutUint16(lp.data[4:6], uint16(newElemCount))
-	return newElemCount, nil
+	// Shift existing data to the right to make room for the new entry at the beginning.
+	copy(lp.data[6+newOffset:], lp.data[6:bytesSize])
+	// Copy new entry from tempBuf to the beginning of the list pack data area.
+	copy(lp.data[6:], tempBuf[:newOffset])
+	binary.BigEndian.PutUint32(lp.data[:4], uint32(bytesSize+newOffset))
+	binary.BigEndian.PutUint16(lp.data[4:6], uint16(elemCount+1))
+	return elemCount + 1, nil
 }
 
 func (lp *listPack) lPop(count int) [][]byte {

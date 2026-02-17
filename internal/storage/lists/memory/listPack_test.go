@@ -21,7 +21,8 @@ func TestListPack_PushElements(t *testing.T) {
 	initialElements := [][]byte{[]byte("hello"), []byte("world")}
 	lp := newListPack(256, initialElements...)
 
-	size, err := lp.push([][]byte{[]byte("avacado"), []byte("listPack")}...)
+	_, _ = lp.push([]byte("avacado"))
+	size, err := lp.push([]byte("listPack"))
 	assert.NoError(t, err)
 
 	assert.Equal(t, 4, size)
@@ -31,7 +32,8 @@ func TestListPack_PushElements(t *testing.T) {
 func TestListsMemoryStore_PopElements(t *testing.T) {
 	initialElements := [][]byte{[]byte("hello"), []byte("world")}
 	lp := newListPack(256, initialElements...)
-	lp.push([][]byte{[]byte("avacado"), []byte("listPack")}...)
+	_, _ = lp.push([]byte("avacado"))
+	_, _ = lp.push([]byte("listPack"))
 
 	elements := lp.pop(1)
 	assert.Equal(t, []byte("listPack"), elements[0])
@@ -50,8 +52,10 @@ func TestListsMemoryStore_PopElements(t *testing.T) {
 
 func TestListsMemoryStore_LPush(t *testing.T) {
 	lp := newEmptyListPack(1024)
-	_, _ = lp.push([][]byte{[]byte("world"), []byte("-124")}...)
-	_, _ = lp.lPush([]byte("hello"), []byte("1231313"))
+	_, _ = lp.push([]byte("world"))
+	_, _ = lp.push([]byte("-124"))
+	_, _ = lp.lPush([]byte("hello"))
+	_, _ = lp.lPush([]byte("1231313"))
 
 	assert.Equal(t, 4, lp.length())
 	elements := lp.pop(4)
