@@ -50,8 +50,8 @@ func TestListsMemoryStore_PopElements(t *testing.T) {
 
 func TestListsMemoryStore_LPush(t *testing.T) {
 	lp := newEmptyListPack(1024)
-	lp.push([][]byte{[]byte("world"), []byte("-124")}...)
-	lp.lPush([]byte("hello"), []byte("1231313"))
+	_, _ = lp.push([][]byte{[]byte("world"), []byte("-124")}...)
+	_, _ = lp.lPush([]byte("hello"), []byte("1231313"))
 
 	assert.Equal(t, 4, lp.length())
 	elements := lp.pop(4)
@@ -59,4 +59,22 @@ func TestListsMemoryStore_LPush(t *testing.T) {
 	assert.Equal(t, []byte("hello"), elements[1])
 	assert.Equal(t, []byte("world"), elements[2])
 	assert.Equal(t, []byte("-124"), elements[3])
+}
+
+func TestListsMemoryStore_LPop(t *testing.T) {
+	elements := [][]byte{[]byte("hello"), []byte("world"), []byte("124"), []byte("JamesBond")}
+	lp := newListPack(1024, elements...)
+
+	popped := lp.lPop(2)
+	assert.Equal(t, 2, len(popped))
+	assert.Equal(t, elements[0], popped[0])
+	assert.Equal(t, elements[1], popped[1])
+
+	popped = lp.lPop(3)
+	assert.Equal(t, 2, len(popped))
+	assert.Equal(t, string(elements[2]), string(popped[0]))
+	assert.Equal(t, elements[3], popped[1])
+
+	popped = lp.lPop(4)
+	assert.Equal(t, 0, len(popped))
 }

@@ -137,3 +137,33 @@ func (lp *listPack) lPush(values ...[]byte) (int, error) {
 	binary.BigEndian.PutUint16(lp.data[4:6], uint16(newElemCount))
 	return newElemCount, nil
 }
+
+func (lp *listPack) lPop(count int) [][]byte {
+	lp.mu.Lock()
+	defer lp.mu.Unlock()
+	byteSize := int(binary.BigEndian.Uint32(lp.data[:4]))
+	length := int(binary.BigEndian.Uint16(lp.data[4:6]))
+	count = min(count, length)
+	elements := make([][]byte, count)
+	index := 0
+	cursor, _ := traverse(lp.data[6:], 0, func(elem interface{}) (bool, error) {
+		switch elem.(type) {
+		case []byte:
+			elements[index] = elem.([]byte)
+		case int:
+			elements[index] = []byte(fmt.Sprintf("%d", elem.(int)))
+		}
+		index++
+		if index >= count {
+			return false, nil
+		}
+		return true, nil
+	})
+
+	copy(lp.data[6:], lp.data[6+cursor:byteSize])
+	newSize := byteSize - cursor
+	newLength := length - count
+	binary.BigEndian.PutUint32(lp.data[:4], uint32(newSize))
+	binary.BigEndian.PutUint16(lp.data[4:6], uint16(newLength))
+	return elements
+}
