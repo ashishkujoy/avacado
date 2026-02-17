@@ -155,3 +155,12 @@ func (lp *listPack) lPop(count int) [][]byte {
 	binary.BigEndian.PutUint16(lp.data[4:6], uint16(newLength))
 	return elements
 }
+
+func isLargerThanListPackSize(value []byte, maxListPackSize int) bool {
+	return encodedSize(value)+7 > maxListPackSize
+}
+
+func newPlainListPack(element []byte) *listPack {
+	size := 6 + encodedSize(element) + 1
+	return newListPack(size, element)
+}
