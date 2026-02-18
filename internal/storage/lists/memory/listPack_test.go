@@ -35,19 +35,10 @@ func TestListsMemoryStore_PopElements(t *testing.T) {
 	_, _ = lp.push([]byte("avacado"))
 	_, _ = lp.push([]byte("listPack"))
 
-	elements := lp.pop(1)
-	assert.Equal(t, []byte("listPack"), elements[0])
-	assert.Equal(t, 3, lp.length())
-
-	elements = lp.pop(2)
-	assert.Equal(t, []byte("world"), elements[0])
-	assert.Equal(t, []byte("avacado"), elements[1])
-	assert.Equal(t, 1, lp.length())
-
-	elements = lp.pop(3)
-	assert.Equal(t, 1, len(elements))
-	assert.Equal(t, []byte("hello"), elements[0])
-	assert.Equal(t, 0, lp.length())
+	assert.Equal(t, []byte("listPack"), lp.pop())
+	assert.Equal(t, []byte("avacado"), lp.pop())
+	assert.Equal(t, []byte("world"), lp.pop())
+	assert.Equal(t, []byte("hello"), lp.pop())
 }
 
 func TestListsMemoryStore_LPush(t *testing.T) {
@@ -58,11 +49,10 @@ func TestListsMemoryStore_LPush(t *testing.T) {
 	_, _ = lp.lPush([]byte("1231313"))
 
 	assert.Equal(t, 4, lp.length())
-	elements := lp.pop(4)
-	assert.Equal(t, []byte("1231313"), elements[0])
-	assert.Equal(t, []byte("hello"), elements[1])
-	assert.Equal(t, []byte("world"), elements[2])
-	assert.Equal(t, []byte("-124"), elements[3])
+	assert.Equal(t, []byte("-124"), lp.pop())
+	assert.Equal(t, []byte("world"), lp.pop())
+	assert.Equal(t, []byte("hello"), lp.pop())
+	assert.Equal(t, []byte("1231313"), lp.pop())
 }
 
 func TestListPack_PushOverflow(t *testing.T) {
@@ -71,7 +61,7 @@ func TestListPack_PushOverflow(t *testing.T) {
 		lp := newEmptyListPack(10)
 		count, err := lp.push([]byte("hello"))
 		assert.Error(t, err)
-		assert.Equal(t, 0, count)   // original elemCount returned
+		assert.Equal(t, 0, count)       // original elemCount returned
 		assert.Equal(t, 0, lp.length()) // listpack not modified
 	})
 
@@ -84,7 +74,7 @@ func TestListPack_PushOverflow(t *testing.T) {
 
 		count, err = lp.push([]byte("hello"))
 		assert.Error(t, err)
-		assert.Equal(t, 1, count)   // original elemCount before failed push
+		assert.Equal(t, 1, count)       // original elemCount before failed push
 		assert.Equal(t, 1, lp.length()) // first value still intact
 	})
 
@@ -93,9 +83,7 @@ func TestListPack_PushOverflow(t *testing.T) {
 		_, _ = lp.push([]byte("hello"))
 		_, _ = lp.push([]byte("hello")) // overflows, ignored
 
-		// original element still readable
-		elems := lp.pop(1)
-		assert.Equal(t, []byte("hello"), elems[0])
+		assert.Equal(t, []byte("hello"), lp.pop())
 	})
 }
 

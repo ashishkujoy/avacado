@@ -66,28 +66,19 @@ func (lp *listPack) push(value []byte) (int, error) {
 	return elemCount + 1, nil
 }
 
-func (lp *listPack) pop(count int) [][]byte {
-	count = min(count, lp.length())
-	// offset points to the 0xFF terminator in lp.data (absolute).
-	// lp.data[6:] holds the encoded entries; the last backLen byte is one
-	// position before 0xFF, adjusted for the 6-byte header: (stored_size-1) - 1 - 6.
+func (lp *listPack) pop() []byte {
 	storedSize := int(binary.BigEndian.Uint32(lp.data[:4]))
-	lastBackLenOffset := storedSize - 2 - 6 // relative to lp.data[6:]
+	lastBackLenOffset := storedSize - 2 - 6
 
-	elements := make([][]byte, count)
-	remaining := count
+	var element []byte
 	cursor, _ := traverseReverse(lp.data[6:], lastBackLenOffset, func(elem interface{}) (bool, error) {
-		remaining--
 		switch elem.(type) {
 		case []byte:
-			elements[remaining] = elem.([]byte)
+			element = elem.([]byte)
 		case int:
-			elements[remaining] = []byte(fmt.Sprintf("%d", elem.(int)))
+			element = []byte(fmt.Sprintf("%d", elem.(int)))
 		}
-		if remaining == 0 {
-			return false, nil
-		}
-		return true, nil
+		return false, nil
 	})
 
 	// cursor is in lp.data[6:] coords and points to the last backLen byte of
@@ -101,8 +92,8 @@ func (lp *listPack) pop(count int) [][]byte {
 	}
 	lp.data[newTerminator] = 0xFF
 	binary.BigEndian.PutUint32(lp.data[0:4], uint32(newTerminator+1))
-	binary.BigEndian.PutUint16(lp.data[4:6], uint16(lp.length()-count))
-	return elements
+	binary.BigEndian.PutUint16(lp.data[4:6], uint16(lp.length()-1))
+	return element
 }
 
 func (lp *listPack) lPush(value []byte) (int, error) {
