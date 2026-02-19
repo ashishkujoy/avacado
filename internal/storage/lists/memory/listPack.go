@@ -147,6 +147,14 @@ func (lp *listPack) lPop(count int) [][]byte {
 	return elements
 }
 
+func (lp *listPack) isEmpty() bool {
+	lp.mu.RLock()
+	defer lp.mu.RUnlock()
+
+	size := binary.BigEndian.Uint32(lp.data[:4])
+	return size == 7
+}
+
 func isLargerThanListPackSize(value []byte, maxListPackSize int) bool {
 	return encodedSize(value)+7 > maxListPackSize
 }

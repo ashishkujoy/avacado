@@ -52,3 +52,18 @@ func (ql *quickList) rPush(element []byte) int {
 	ql.size++
 	return ql.size
 }
+
+func (ql *quickList) rPop() ([]byte, int) {
+	ql.mu.Lock()
+	defer ql.mu.Unlock()
+	if ql.size == 0 {
+		return nil, 0
+	}
+	tail := ql.lps[len(ql.lps)-1]
+	element := tail.pop()
+	ql.size -= 1
+	if tail.isEmpty() && len(ql.lps) > 1 {
+		ql.lps = ql.lps[:len(ql.lps)-1]
+	}
+	return element, ql.size
+}
