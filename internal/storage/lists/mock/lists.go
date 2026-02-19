@@ -10,6 +10,7 @@
 package mocklists
 
 import (
+	context "context"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -39,22 +40,52 @@ func (m *MockLists) EXPECT() *MockListsMockRecorder {
 	return m.recorder
 }
 
-// LPush mocks base method.
-func (m *MockLists) LPush(key string, values ...[]byte) (int64, error) {
+// Len mocks base method.
+func (m *MockLists) Len(ctx context.Context, key string) (int, error) {
 	m.ctrl.T.Helper()
-	varargs := []any{key}
-	for _, a := range values {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "LPush", varargs...)
-	ret0, _ := ret[0].(int64)
+	ret := m.ctrl.Call(m, "Len", ctx, key)
+	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// LPush indicates an expected call of LPush.
-func (mr *MockListsMockRecorder) LPush(key any, values ...any) *gomock.Call {
+// Len indicates an expected call of Len.
+func (mr *MockListsMockRecorder) Len(ctx, key any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{key}, values...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LPush", reflect.TypeOf((*MockLists)(nil).LPush), varargs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Len", reflect.TypeOf((*MockLists)(nil).Len), ctx, key)
+}
+
+// RPop mocks base method.
+func (m *MockLists) RPop(ctx context.Context, key string, count int) ([][]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RPop", ctx, key, count)
+	ret0, _ := ret[0].([][]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RPop indicates an expected call of RPop.
+func (mr *MockListsMockRecorder) RPop(ctx, key, count any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RPop", reflect.TypeOf((*MockLists)(nil).RPop), ctx, key, count)
+}
+
+// RPush mocks base method.
+func (m *MockLists) RPush(ctx context.Context, key string, values ...[]byte) (int, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key}
+	for _, a := range values {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RPush", varargs...)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RPush indicates an expected call of RPush.
+func (mr *MockListsMockRecorder) RPush(ctx, key any, values ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key}, values...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RPush", reflect.TypeOf((*MockLists)(nil).RPush), varargs...)
 }

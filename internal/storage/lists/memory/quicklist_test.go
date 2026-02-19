@@ -8,43 +8,35 @@ import (
 
 func TestQuickList_RPush(t *testing.T) {
 	ql := newQuickList(defaultMaxListPackSize)
-	ql.rPush([]byte("hello"))
-	ql.rPush([]byte("world"))
-	ql.rPush([]byte("avacado"))
-	ql.rPush([]byte("listPack"))
+	ql.rPush([][]byte{[]byte("hello")})
+	assert.Equal(t, 1, ql.length())
+	ql.rPush([][]byte{
+		[]byte("world"),
+		[]byte("avacado"),
+		[]byte("listPack"),
+	})
 
 	assert.Equal(t, 4, ql.length())
 }
 
 func TestQuickList_RPop(t *testing.T) {
 	ql := newQuickList(20)
-	ql.rPush([]byte("12"))
-	ql.rPush([]byte("abcdefghi"))
+	ql.rPush([][]byte{[]byte("12"), []byte("abcdefghi")})
 
 	assert.Equal(t, 1, len(ql.lps))
 	// should create a new listPack here
-	ql.rPush([]byte("Hello"))
+	ql.rPush([][]byte{[]byte("Hello")})
 	assert.Equal(t, 2, len(ql.lps))
-	ql.rPush([]byte("1"))
+	ql.rPush([][]byte{[]byte("1")})
 	assert.Equal(t, 2, len(ql.lps))
 
-	data, size := ql.rPop()
-	assert.Equal(t, []byte("1"), data)
-	assert.Equal(t, 3, size)
-
-	data, size = ql.rPop()
-	assert.Equal(t, []byte("Hello"), data)
+	elements, size := ql.rPop(2)
+	assert.Equal(t, []byte("1"), elements[0])
+	assert.Equal(t, []byte("Hello"), elements[1])
 	assert.Equal(t, 2, size)
-	// should release empty listPack
-	assert.Equal(t, 1, len(ql.lps))
 
-	data, size = ql.rPop()
-	assert.Equal(t, []byte("abcdefghi"), data)
-	assert.Equal(t, 1, size)
-
-	data, size = ql.rPop()
-	assert.Equal(t, []byte("12"), data)
+	elements, size = ql.rPop(4)
+	assert.Equal(t, []byte("abcdefghi"), elements[0])
+	assert.Equal(t, []byte("12"), elements[1])
 	assert.Equal(t, 0, size)
-	// should not release empty head listPack
-	assert.Equal(t, 1, len(ql.lps))
 }
