@@ -151,8 +151,8 @@ func (lp *listPack) isEmpty() bool {
 	lp.mu.RLock()
 	defer lp.mu.RUnlock()
 
-	size := binary.BigEndian.Uint32(lp.data[:4])
-	return size == 7
+	size := binary.BigEndian.Uint16(lp.data[4:6])
+	return size == 0
 }
 
 func isLargerThanListPackSize(value []byte, maxListPackSize int) bool {

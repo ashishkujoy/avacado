@@ -53,6 +53,7 @@ func (ql *quickList) rPush(element []byte) int {
 	return ql.size
 }
 
+// rPop removes an element from the end of the quick list and return the element and new length of the list.
 func (ql *quickList) rPop() ([]byte, int) {
 	ql.mu.Lock()
 	defer ql.mu.Unlock()

@@ -127,3 +127,14 @@ func TestListsMemoryStore_LPop(t *testing.T) {
 	popped = lp.lPop(4)
 	assert.Equal(t, 0, len(popped))
 }
+
+func TestListsMemoryStore_IsEmpty(t *testing.T) {
+	lp := newEmptyListPack(24)
+	assert.True(t, lp.isEmpty())
+
+	_, _ = lp.push([]byte("12"))
+	assert.False(t, lp.isEmpty())
+
+	lp.pop()
+	assert.True(t, lp.isEmpty())
+}
