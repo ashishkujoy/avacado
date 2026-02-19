@@ -11,6 +11,7 @@ package mocksstorage
 
 import (
 	kv "avacado/internal/storage/kv"
+	lists "avacado/internal/storage/lists"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -52,4 +53,18 @@ func (m *MockStorage) KV() kv.Store {
 func (mr *MockStorageMockRecorder) KV() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KV", reflect.TypeOf((*MockStorage)(nil).KV))
+}
+
+// Lists mocks base method.
+func (m *MockStorage) Lists() lists.Lists {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Lists")
+	ret0, _ := ret[0].(lists.Lists)
+	return ret0
+}
+
+// Lists indicates an expected call of Lists.
+func (mr *MockStorageMockRecorder) Lists() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lists", reflect.TypeOf((*MockStorage)(nil).Lists))
 }
