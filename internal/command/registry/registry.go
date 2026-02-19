@@ -35,6 +35,7 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 
 	registry.Register(list.NewLLenParser())
 	registry.Register(list.NewRPushParser())
+	registry.Register(list.NewRPopParser())
 
 	return registry
 }
