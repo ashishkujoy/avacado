@@ -6,6 +6,7 @@ import (
 	"avacado/internal/command/connection/client"
 	"avacado/internal/command/kv"
 	"avacado/internal/command/kv/expiry"
+	"avacado/internal/command/list"
 	"avacado/internal/protocol"
 	"strings"
 )
@@ -31,6 +32,8 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 	registry.Register(kv.NewDecrByParser())
 	registry.Register(kv.NewDelParser())
 	registry.Register(kv.NewExistsParser())
+
+	registry.Register(list.NewLLenParser())
 
 	return registry
 }
