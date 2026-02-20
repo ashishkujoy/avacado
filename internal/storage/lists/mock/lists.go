@@ -40,6 +40,26 @@ func (m *MockLists) EXPECT() *MockListsMockRecorder {
 	return m.recorder
 }
 
+// LPush mocks base method.
+func (m *MockLists) LPush(ctx context.Context, key string, values ...[]byte) (int, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, key}
+	for _, a := range values {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LPush", varargs...)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LPush indicates an expected call of LPush.
+func (mr *MockListsMockRecorder) LPush(ctx, key any, values ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, key}, values...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LPush", reflect.TypeOf((*MockLists)(nil).LPush), varargs...)
+}
+
 // Len mocks base method.
 func (m *MockLists) Len(ctx context.Context, key string) (int, error) {
 	m.ctrl.T.Helper()

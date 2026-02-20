@@ -22,6 +22,26 @@ func NewListMemoryStore(maxListPackSize int) *ListMemoryStore {
 	}
 }
 
+// LPush add the given values at the head of quicklist specified by the given key
+// If key is not present a new quicklist entry is created first, followed by
+// pushing elements.
+func (l *ListMemoryStore) LPush(ctx context.Context, key string, values ...[]byte) (int, error) {
+	l.mu.RLock()
+
+	list, ok := l.lists[key]
+	if !ok {
+		list = newQuickList(l.maxListPackSize)
+		l.mu.RUnlock()
+		l.mu.Lock()
+		l.lists[key] = list
+		l.mu.Unlock()
+	} else {
+		l.mu.RUnlock()
+	}
+	length := list.lPush(values)
+	return length, nil
+}
+
 // RPush add the given values at the end of quicklist specified by the given key
 // If key is not present a new quicklist entry is created first, followed by
 // pushing elements.

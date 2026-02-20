@@ -27,6 +27,32 @@ func (ql *quickList) length() int {
 	return ql.size
 }
 
+// lPush adds elements to the head of the quick list and returns the new length of the list.
+func (ql *quickList) lPush(elements [][]byte) int {
+	ql.mu.Lock()
+	defer ql.mu.Unlock()
+	for _, element := range elements {
+		if isLargerThanListPackSize(element, ql.maxListPackSize) {
+			lp := newPlainListPack(element)
+			if ql.lps[0].length() == 0 {
+				ql.lps[0] = lp
+			} else {
+				ql.lps = append([]*listPack{lp}, ql.lps...)
+			}
+			ql.size++
+			return ql.size
+		}
+		_, err := ql.lps[0].lPush(element)
+		if err != nil {
+			lp := newEmptyListPack(ql.maxListPackSize)
+			_, _ = lp.lPush(element)
+			ql.lps = append([]*listPack{lp}, ql.lps...)
+		}
+		ql.size++
+	}
+	return ql.size
+}
+
 // rPush adds an element to the end of the quick list and returns the new length of the list.
 func (ql *quickList) rPush(elements [][]byte) int {
 	ql.mu.Lock()
