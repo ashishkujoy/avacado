@@ -155,6 +155,32 @@ func (lp *listPack) isEmpty() bool {
 	return size == 0
 }
 
+func (lp *listPack) atIndex(i int) ([]byte, bool) {
+	length := lp.length()
+	if i < 0 {
+		i = i + length
+	}
+	if i >= length {
+		return nil, false
+	}
+	r := 0
+	var element []byte
+	_, _ = traverse(lp.data[6:], 0, func(elem interface{}) (bool, error) {
+		if r != i {
+			r++
+			return true, nil
+		}
+		switch elem.(type) {
+		case []byte:
+			element = elem.([]byte)
+		case int:
+			element = []byte(fmt.Sprintf("%d", elem.(int)))
+		}
+		return false, nil
+	})
+	return element, element != nil
+}
+
 func isLargerThanListPackSize(value []byte, maxListPackSize int) bool {
 	return encodedSize(value)+7 > maxListPackSize
 }

@@ -138,3 +138,51 @@ func TestListsMemoryStore_IsEmpty(t *testing.T) {
 	lp.pop()
 	assert.True(t, lp.isEmpty())
 }
+
+func TestListMemoryStore_LIndex(t *testing.T) {
+	lp := newEmptyListPack(24)
+	_, _ = lp.push([]byte("Hi"))
+	_, _ = lp.push([]byte("120"))
+	_, _ = lp.push([]byte("300"))
+	_, _ = lp.push([]byte("hi bye"))
+
+	t.Run("Positive index only", func(t *testing.T) {
+		element, found := lp.atIndex(3)
+		assert.True(t, found)
+		assert.Equal(t, []byte("hi bye"), element)
+
+		element, found = lp.atIndex(1)
+		assert.True(t, found)
+		assert.Equal(t, []byte("120"), element)
+
+		element, found = lp.atIndex(0)
+		assert.True(t, found)
+		assert.Equal(t, []byte("Hi"), element)
+
+		element, found = lp.atIndex(4)
+		assert.False(t, found)
+		assert.Nil(t, element)
+	})
+
+	t.Run("Negative index", func(t *testing.T) {
+		element, found := lp.atIndex(-1)
+		assert.True(t, found)
+		assert.Equal(t, []byte("hi bye"), element)
+
+		element, found = lp.atIndex(-2)
+		assert.True(t, found)
+		assert.Equal(t, []byte("300"), element)
+
+		element, found = lp.atIndex(-3)
+		assert.True(t, found)
+		assert.Equal(t, []byte("120"), element)
+
+		element, found = lp.atIndex(-4)
+		assert.True(t, found)
+		assert.Equal(t, []byte("Hi"), element)
+
+		element, found = lp.atIndex(-5)
+		assert.False(t, found)
+		assert.Nil(t, element)
+	})
+}
