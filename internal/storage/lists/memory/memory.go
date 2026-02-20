@@ -67,6 +67,19 @@ func (l *ListMemoryStore) RPush(ctx context.Context, key string, values ...[]byt
 	return length, nil
 }
 
+// LPop remove the given number of values from the head of quicklist specified by the given key
+// If key is not present a nil slice is returned
+func (l *ListMemoryStore) LPop(ctx context.Context, key string, count int) ([][]byte, error) {
+	l.mu.RLock()
+	list, ok := l.lists[key]
+	l.mu.RUnlock()
+	if !ok {
+		return nil, nil
+	}
+	elements, _ := list.lPop(count)
+	return elements, nil
+}
+
 // RPop remove the given number of values from the end of quicklist specified by the given key
 // If key is not present a nil slice is return
 // RPop try to manually release the read or write lock to allow maximum possible

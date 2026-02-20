@@ -8,6 +8,7 @@ import "context"
 type Lists interface {
 	LPush(ctx context.Context, key string, values ...[]byte) (int, error)
 	RPush(ctx context.Context, key string, values ...[]byte) (int, error)
+	LPop(ctx context.Context, key string, count int) ([][]byte, error)
 	RPop(ctx context.Context, key string, count int) ([][]byte, error)
 	Len(ctx context.Context, key string) (int, error)
 }

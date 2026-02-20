@@ -157,6 +157,36 @@ func TestLPush_PushToExistingList(t *testing.T) {
 	assert.Equal(t, "b", val)
 }
 
+func TestLPop_SingleElement(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lpop1", "a", "b", "c")
+
+	val, err := testClient.LPop(ctx, "lpop1").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "a", val)
+}
+
+func TestLPop_NonExistingKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	_, err := testClient.LPop(ctx, "lpop_nonexistent").Result()
+	assert.Equal(t, redis.Nil, err)
+}
+
+func TestLPop_WithCount(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lpop2", "a", "b", "c", "d")
+
+	vals, err := testClient.LPopCount(ctx, "lpop2", 2).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "b"}, vals)
+}
+
 func TestList_PushPopLen(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

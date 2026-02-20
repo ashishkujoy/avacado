@@ -81,6 +81,33 @@ func (ql *quickList) rPush(elements [][]byte) int {
 	return ql.size
 }
 
+// lPop removes elements from the head of the quick list and returns the elements and new length of the list.
+func (ql *quickList) lPop(count int) ([][]byte, int) {
+	ql.mu.Lock()
+	defer ql.mu.Unlock()
+	if ql.size == 0 {
+		return nil, 0
+	}
+	elements := make([][]byte, count)
+	length := 0
+	for ; length < count; length++ {
+		head := ql.lps[0]
+		if head.isEmpty() {
+			break
+		}
+		popped := head.lPop(1)
+		if len(popped) == 0 {
+			break
+		}
+		elements[length] = popped[0]
+		ql.size -= 1
+		if head.isEmpty() && len(ql.lps) > 1 {
+			ql.lps = ql.lps[1:]
+		}
+	}
+	return elements[:length], ql.size
+}
+
 // rPop removes an element from the end of the quick list and return the element and new length of the list.
 func (ql *quickList) rPop(count int) ([][]byte, int) {
 	ql.mu.Lock()

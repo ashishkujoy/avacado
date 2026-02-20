@@ -40,6 +40,21 @@ func (m *MockLists) EXPECT() *MockListsMockRecorder {
 	return m.recorder
 }
 
+// LPop mocks base method.
+func (m *MockLists) LPop(ctx context.Context, key string, count int) ([][]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LPop", ctx, key, count)
+	ret0, _ := ret[0].([][]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LPop indicates an expected call of LPop.
+func (mr *MockListsMockRecorder) LPop(ctx, key, count any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LPop", reflect.TypeOf((*MockLists)(nil).LPop), ctx, key, count)
+}
+
 // LPush mocks base method.
 func (m *MockLists) LPush(ctx context.Context, key string, values ...[]byte) (int, error) {
 	m.ctrl.T.Helper()
