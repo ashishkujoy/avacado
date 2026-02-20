@@ -1,6 +1,6 @@
 # Avacado Benchmark Findings
 
-**Test Date:** February 9, 2026
+**Test Date:** February 20, 2026 (latest), February 9, 2026 (baseline)
 **Test Configuration:** 100,000 requests, 50 concurrent clients
 **Commands Tested:** SET, GET
 **Comparison:** Avacado vs Official Redis Server
@@ -321,4 +321,66 @@ redis-benchmark -h localhost -p [PORT] -t set,get -n 100000 -c 50 --csv
 
 ---
 
-*Last Updated: February 9, 2026*
+*Last Updated: February 20, 2026*
+
+---
+
+## Benchmark History
+
+### February 20, 2026 (Full Command Suite — Automated Benchmark)
+
+**Configuration:** 100K requests, 50 clients, 3-byte data, all benchmarkable commands
+**Platform:** Darwin arm64 (Apple M4 Pro), Go 1.26.0
+**Script:** `benchmarks/run_benchmark.sh` (auto-discovers commands from source)
+
+| Command | Avacado (req/s) | Redis (req/s) | Ratio |
+|---------|----------------:|---------------:|------:|
+| SET     | 121,065         | 173,010        | 70.0% |
+| GET     | 121,655         | 194,932        | 62.4% |
+| INCR    | 121,065         | 193,050        | 62.7% |
+| LPUSH   | 118,064         | 194,175        | 60.8% |
+| RPUSH   | 121,655         | 194,553        | 62.5% |
+| LPOP    | 122,549         | 204,082        | 60.0% |
+| RPOP    | 122,850         | 195,695        | 62.8% |
+
+**Key findings:**
+- All 7 benchmarkable commands exceed **118K req/s** — well above the 100K target
+- Overall range: **60–70% of Redis throughput** (within acceptable 50–80% band)
+- SET is the strongest at **70.0%** of Redis
+- LPOP/RPOP have **better p99 than Redis** (0.327ms vs 0.383ms for RPOP)
+- INCR p99 (0.303ms) beats Redis (0.399ms) by 24%
+- List commands (LPUSH/RPUSH/LPOP/RPOP) perform on par with KV commands — no overhead from list storage layer
+- p50 latency gap (~0.231ms vs 0.135ms) remains consistent across all commands
+
+**Notes:** First benchmark covering the full command suite using the automated script. List commands introduced with no performance regression on KV operations.
+
+Detailed report: `benchmarks/redis_benchmark/comparison_20260220_111503.md`
+
+### February 20, 2026 (Post List Commands Refactor)
+
+**Configuration:** 100K requests, 50 clients, 3-byte data, SET/GET
+**Platform:** Darwin arm64 (Apple M4 Pro, 48GB RAM), Go 1.26.0
+
+| Command | Avacado (req/s) | Redis (req/s) | Ratio |
+|---------|-----------------|----------------|-------|
+| SET | 119,617 | 193,424 | 61.8% |
+| GET | 124,533 | 191,571 | 65.0% |
+
+**Changes since last benchmark:**
+- SET throughput: 117,786 -> 119,617 (+1.6%)
+- GET throughput: 118,765 -> 124,533 (+4.9%)
+- GET p95 improved: 0.271ms -> 0.255ms
+- GET p99 improved: 0.327ms -> 0.295ms
+
+**Notes:** Performance is stable after LPOP/RPOP refactor into unified Pop command. No regression detected. Slight improvements likely due to Go 1.26 and system differences.
+
+Detailed report: `benchmarks/redis_benchmark/comparison_20260220_101307.md`
+
+### February 9, 2026 (Initial Baseline)
+
+| Command | Avacado (req/s) | Redis (req/s) | Ratio |
+|---------|-----------------|----------------|-------|
+| SET | 117,786 | 189,036 | 62.3% |
+| GET | 118,765 | 182,815 | 65.0% |
+
+Detailed report: `benchmarks/redis_benchmark/comparison_20260209.md`

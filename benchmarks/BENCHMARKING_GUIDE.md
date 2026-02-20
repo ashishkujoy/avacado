@@ -8,7 +8,9 @@ Avacado is a Redis-compatible in-memory key-value store written in Go (~4,500 li
 - RESP protocol parser and serializer
 - TCP server with concurrent connection handling
 - In-memory storage with expiry support
-- Commands: SET, GET, INCR, DECR, DECRBY, DEL, EXISTS, TTL, PTTL, HELLO, CLIENT
+- KV commands: SET, GET, INCR, DECR, DECRBY, DEL, EXISTS, TTL, PTTL
+- List commands: LPUSH, RPUSH, LPOP, RPOP, LLEN
+- Connection commands: HELLO, CLIENT
 
 ---
 
@@ -469,6 +471,44 @@ benchmarks/
 
 ---
 
+## Automated Benchmark Script
+
+**`benchmarks/run_benchmark.sh`** handles the full benchmark lifecycle automatically:
+
+1. Scans `internal/command/` source files to discover all supported commands
+2. Maps discovered commands to redis-benchmark test types
+3. Builds the Avacado binary
+4. Starts the Avacado server
+5. Runs redis-benchmark against Avacado (and Redis if available)
+6. Generates a dated markdown comparison report in `benchmarks/redis_benchmark/`
+
+```bash
+# Quick run (Redis comparison if Redis is running on port 6379)
+./benchmarks/run_benchmark.sh
+
+# Avacado only (no Redis comparison)
+SKIP_REDIS=1 ./benchmarks/run_benchmark.sh
+
+# Custom configuration
+REQUESTS=500000 CLIENTS=100 DATA_SIZE=100 ./benchmarks/run_benchmark.sh
+
+# Custom ports
+AVACADO_PORT=6380 REDIS_PORT=6379 ./benchmarks/run_benchmark.sh
+```
+
+**Environment variables:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AVACADO_PORT` | `6380` | Port to run Avacado on |
+| `REDIS_PORT` | `6379` | Port Redis is running on |
+| `REQUESTS` | `100000` | Requests per command |
+| `CLIENTS` | `50` | Concurrent clients |
+| `DATA_SIZE` | `3` | Value size in bytes |
+| `SKIP_REDIS` | `0` | Set to `1` to skip Redis comparison |
+
+The script automatically discovers commands — no manual updates needed when new commands are added.
+
 ## Example Benchmark Commands
 
 ### Storage Layer
@@ -487,14 +527,13 @@ go test -bench=BenchmarkParse -benchmem -benchtime=10s
 go test -bench=BenchmarkSerialize -benchmem -benchtime=10s
 ```
 
-### End-to-End
+### End-to-End (Manual)
 ```bash
 # Start server
 go run cmd/server/main.go -port 6379
 
 # In another terminal
-redis-benchmark -h localhost -p 6379 -t set,get -n 1000000 -c 50 -d 100
-redis-benchmark -h localhost -p 6379 -t incr,decr -n 1000000 -c 50
+redis-benchmark -h localhost -p 6379 -t set,get,incr,lpush,rpush,lpop,rpop -n 1000000 -c 50 -d 100
 redis-benchmark -h localhost -p 6379 -q
 ```
 
