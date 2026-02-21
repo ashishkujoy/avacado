@@ -13,6 +13,19 @@ type ListMemoryStore struct {
 	maxListPackSize int
 }
 
+// LIndex finds an element in listPact from left side.
+// return nil byte slice if there is no element at given index
+func (l *ListMemoryStore) LIndex(ctx context.Context, key string, index int) ([]byte, error) {
+	l.mu.RLock()
+	list, found := l.lists[key]
+	l.mu.RUnlock()
+	if !found {
+		return nil, nil
+	}
+	element, _ := list.atIndex(index)
+	return element, nil
+}
+
 // NewListMemoryStore creates a ListMemoryStore with given maxListPackSize
 func NewListMemoryStore(maxListPackSize int) *ListMemoryStore {
 	return &ListMemoryStore{

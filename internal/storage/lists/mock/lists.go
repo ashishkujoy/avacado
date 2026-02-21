@@ -40,6 +40,21 @@ func (m *MockLists) EXPECT() *MockListsMockRecorder {
 	return m.recorder
 }
 
+// LIndex mocks base method.
+func (m *MockLists) LIndex(ctx context.Context, key string, index int) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LIndex", ctx, key, index)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LIndex indicates an expected call of LIndex.
+func (mr *MockListsMockRecorder) LIndex(ctx, key, index any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LIndex", reflect.TypeOf((*MockLists)(nil).LIndex), ctx, key, index)
+}
+
 // LPop mocks base method.
 func (m *MockLists) LPop(ctx context.Context, key string, count int) ([][]byte, error) {
 	m.ctrl.T.Helper()

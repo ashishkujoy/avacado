@@ -11,4 +11,5 @@ type Lists interface {
 	LPop(ctx context.Context, key string, count int) ([][]byte, error)
 	RPop(ctx context.Context, key string, count int) ([][]byte, error)
 	Len(ctx context.Context, key string) (int, error)
+	LIndex(ctx context.Context, key string, index int) ([]byte, error)
 }

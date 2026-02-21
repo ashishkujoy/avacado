@@ -131,3 +131,24 @@ func (ql *quickList) rPop(count int) ([][]byte, int) {
 	}
 	return elements[:length], ql.size
 }
+
+func (ql *quickList) atIndex(index int) ([]byte, bool) {
+	ql.mu.RLock()
+	defer ql.mu.RUnlock()
+	if index < 0 {
+		index = ql.size + index
+	}
+	if index >= ql.size || index < 0 {
+		return nil, false
+	}
+
+	endIndex := 0
+	for _, lp := range ql.lps {
+		lpLength := lp.length()
+		if endIndex+lpLength > index {
+			return lp.atIndex(index - endIndex)
+		}
+		endIndex += lpLength
+	}
+	return nil, false
+}

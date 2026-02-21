@@ -187,6 +187,68 @@ func TestLPop_WithCount(t *testing.T) {
 	assert.Equal(t, []string{"a", "b"}, vals)
 }
 
+func TestLIndex_ExistingElement(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lindex1", "a", "b", "c")
+
+	val, err := testClient.LIndex(ctx, "lindex1", 0).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "a", val)
+
+	val, err = testClient.LIndex(ctx, "lindex1", 1).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "b", val)
+
+	val, err = testClient.LIndex(ctx, "lindex1", 2).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "c", val)
+}
+
+func TestLIndex_NegativeIndex(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lindex2", "a", "b", "c")
+
+	// -1 is the last element
+	val, err := testClient.LIndex(ctx, "lindex2", -1).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "c", val)
+
+	// -2 is the second to last element
+	val, err = testClient.LIndex(ctx, "lindex2", -2).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "b", val)
+
+	// -3 is the first element
+	val, err = testClient.LIndex(ctx, "lindex2", -3).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "a", val)
+}
+
+func TestLIndex_OutOfRange(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lindex3", "a", "b", "c")
+
+	_, err := testClient.LIndex(ctx, "lindex3", 10).Result()
+	assert.Equal(t, redis.Nil, err)
+
+	_, err = testClient.LIndex(ctx, "lindex3", -10).Result()
+	assert.Equal(t, redis.Nil, err)
+}
+
+func TestLIndex_NonExistingKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	_, err := testClient.LIndex(ctx, "lindex_nonexistent", 0).Result()
+	assert.Equal(t, redis.Nil, err)
+}
+
 func TestList_PushPopLen(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
