@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
@@ -247,6 +248,50 @@ func TestLIndex_NonExistingKey(t *testing.T) {
 
 	_, err := testClient.LIndex(ctx, "lindex_nonexistent", 0).Result()
 	assert.Equal(t, redis.Nil, err)
+}
+
+func TestBLPop_ImmediatelyAvailable(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "blpop1", "a", "b", "c")
+
+	result, err := testClient.BLPop(ctx, time.Second, "blpop1").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"blpop1", "a"}, result)
+}
+
+func TestBLPop_BlocksUntilPush(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		testClient.RPush(ctx, "blpop2", "hello")
+	}()
+
+	result, err := testClient.BLPop(ctx, 2*time.Second, "blpop2").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"blpop2", "hello"}, result)
+}
+
+func TestBLPop_Timeout(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	_, err := testClient.BLPop(ctx, 200*time.Millisecond, "blpop_empty").Result()
+	assert.Equal(t, redis.Nil, err)
+}
+
+func TestBLPop_MultipleKeys(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "blpop_mk2", "first")
+
+	result, err := testClient.BLPop(ctx, time.Second, "blpop_mk1", "blpop_mk2").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"blpop_mk2", "first"}, result)
 }
 
 func TestList_PushPopLen(t *testing.T) {

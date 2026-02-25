@@ -19,11 +19,11 @@ func (b *BLPop) Execute(ctx context.Context, storage storage.Storage) *protocol.
 
 	// Respond with the first available value
 	for _, key := range b.Keys {
-		elements, _ := lists.RPop(ctx, key, 1)
+		elements, _ := lists.LPop(ctx, key, 1)
 		if len(elements) == 0 {
 			continue
 		}
-		protocol.NewArrayResponse([]interface{}{key, elements[0]})
+		return protocol.NewArrayResponse([]interface{}{key, elements[0]})
 	}
 	timeout, cancel := context.WithTimeout(ctx, time.Duration(b.Timeout)*time.Second)
 	defer cancel()
