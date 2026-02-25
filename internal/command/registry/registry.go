@@ -38,6 +38,8 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 	registry.Register(list.NewLPopParser())
 	registry.Register(list.NewRPushParser())
 	registry.Register(list.NewRPopParser())
+	registry.Register(list.NewBLPopParser())
+	registry.Register(list.NewLIndexParser())
 
 	return registry
 }

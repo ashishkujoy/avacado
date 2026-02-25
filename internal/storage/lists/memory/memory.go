@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"avacado/internal/storage/lists"
 	"context"
 	"sync"
 )
@@ -11,6 +12,36 @@ type ListMemoryStore struct {
 	mu              sync.RWMutex
 	lists           map[string]*quickList
 	maxListPackSize int
+	notifier        ListAvailabilityNotifier
+}
+
+func (l *ListMemoryStore) BlPop(ctx context.Context, keys []string) <-chan lists.ListNameToItem {
+	resultCh := make(chan lists.ListNameToItem, 1)
+	notifyCh := l.notifier.AwaitFor(keys)
+
+	go func() {
+		defer close(resultCh)
+		defer l.notifier.DeregisterClients(notifyCh, keys)
+
+		select {
+		case <-ctx.Done():
+			return
+		case key := <-notifyCh:
+			l.mu.RLock()
+			list, ok := l.lists[key]
+			l.mu.RUnlock()
+			if !ok {
+				return
+			}
+			elements, _ := list.lPop(1)
+			if len(elements) == 0 {
+				return
+			}
+			resultCh <- lists.ListNameToItem{Key: key, Value: elements[0]}
+		}
+	}()
+
+	return resultCh
 }
 
 // LIndex finds an element in listPact from left side.
@@ -32,6 +63,7 @@ func NewListMemoryStore(maxListPackSize int) *ListMemoryStore {
 		mu:              sync.RWMutex{},
 		lists:           make(map[string]*quickList),
 		maxListPackSize: maxListPackSize,
+		notifier:        *NewListAvailabilityNotifier(),
 	}
 }
 
@@ -52,6 +84,7 @@ func (l *ListMemoryStore) LPush(ctx context.Context, key string, values ...[]byt
 		l.mu.RUnlock()
 	}
 	length := list.lPush(values)
+	l.notifier.NotifyAvailable(key)
 	return length, nil
 }
 
@@ -77,6 +110,7 @@ func (l *ListMemoryStore) RPush(ctx context.Context, key string, values ...[]byt
 		l.mu.RUnlock()
 	}
 	length := list.rPush(values)
+	l.notifier.NotifyAvailable(key)
 	return length, nil
 }
 

@@ -168,6 +168,35 @@ func NewNumberResponse(n int64) *Response {
 	return NewSuccessResponse(NewNumberProtocolValue(n))
 }
 
+func NewArrayResponse(values []interface{}) *Response {
+	protocolValues := make([]Value, len(values))
+	for i, v := range values {
+		switch val := v.(type) {
+		case string:
+			protocolValues[i] = NewStringProtocolValue(val)
+		case []byte:
+			protocolValues[i] = NewBulkStringProtocolValue(val)
+		case int:
+			protocolValues[i] = NewNumberProtocolValue(int64(val))
+		case int32:
+			protocolValues[i] = NewNumberProtocolValue(int64(val))
+		case int64:
+			protocolValues[i] = NewNumberProtocolValue(val)
+		case []Value:
+			protocolValues[i] = NewArrayProtocolValue(val)
+		case []MapEntry:
+			protocolValues[i] = NewMapProtocolValue(val)
+		case Value:
+			protocolValues[i] = val
+		case nil:
+			protocolValues[i] = Value{Null: true, Type: TypeBulkString}
+		default:
+			protocolValues[i] = NewStringProtocolValue(fmt.Sprintf("%v", val))
+		}
+	}
+	return NewSuccessResponse(NewArrayProtocolValue(protocolValues))
+}
+
 func NewMapResponse(entries []MapEntry) *Response {
 	return NewSuccessResponse(NewMapProtocolValue(entries))
 }

@@ -14,13 +14,13 @@ type LIndex struct {
 }
 
 func (l *LIndex) Execute(ctx context.Context, storage storage.Storage) *protocol.Response {
-	_, err := storage.KV().Get(ctx, l.Key)
+	val, err := storage.KV().Get(ctx, l.Key)
 	// Element represented by key is not list
-	if err == nil {
+	if err == nil && val != nil {
 		return protocol.NewErrorResponse(errors.New("(error) WRONGTYPE Operation against a key holding the wrong kind of value"))
 	}
 	element, err := storage.Lists().LIndex(ctx, l.Key, l.Index)
-	if err != nil {
+	if err != nil || element == nil {
 		return protocol.NewNullBulkStringResponse()
 	}
 	return protocol.NewBulkStringResponse(element)

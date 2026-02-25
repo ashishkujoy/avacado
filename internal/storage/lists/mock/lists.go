@@ -10,6 +10,7 @@
 package mocklists
 
 import (
+	lists "avacado/internal/storage/lists"
 	context "context"
 	reflect "reflect"
 
@@ -38,6 +39,20 @@ func NewMockLists(ctrl *gomock.Controller) *MockLists {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockLists) EXPECT() *MockListsMockRecorder {
 	return m.recorder
+}
+
+// BlPop mocks base method.
+func (m *MockLists) BlPop(ctx context.Context, keys []string) <-chan lists.ListNameToItem {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BlPop", ctx, keys)
+	ret0, _ := ret[0].(<-chan lists.ListNameToItem)
+	return ret0
+}
+
+// BlPop indicates an expected call of BlPop.
+func (mr *MockListsMockRecorder) BlPop(ctx, keys any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BlPop", reflect.TypeOf((*MockLists)(nil).BlPop), ctx, keys)
 }
 
 // LIndex mocks base method.
