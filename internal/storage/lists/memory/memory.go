@@ -17,12 +17,31 @@ type ListMemoryStore struct {
 
 func (l *ListMemoryStore) BlPop(ctx context.Context, keys []string) <-chan lists.ListNameToItem {
 	resultCh := make(chan lists.ListNameToItem, 1)
+	// Register BEFORE checking keys to avoid missing a push that arrives
+	// between the check and registration (TOCTOU race).
 	notifyCh := l.notifier.AwaitFor(keys)
 
 	go func() {
 		defer close(resultCh)
 		defer l.notifier.DeregisterClients(notifyCh, keys)
 
+		// Non-blocking check AFTER registration: any push that happened
+		// before AwaitFor will have its data sitting in the list here.
+		for _, key := range keys {
+			l.mu.RLock()
+			list, ok := l.lists[key]
+			l.mu.RUnlock()
+			if !ok {
+				continue
+			}
+			elements, _ := list.lPop(1)
+			if len(elements) > 0 {
+				resultCh <- lists.ListNameToItem{Key: key, Value: elements[0]}
+				return
+			}
+		}
+
+		// All keys empty — block until a push notifies us or context expires.
 		select {
 		case <-ctx.Done():
 			return

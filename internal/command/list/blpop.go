@@ -17,15 +17,6 @@ type BLPop struct {
 func (b *BLPop) Execute(ctx context.Context, storage storage.Storage) *protocol.Response {
 	lists := storage.Lists()
 
-	// Respond with the first available value
-	for _, key := range b.Keys {
-		elements, _ := lists.LPop(ctx, key, 1)
-		if len(elements) == 0 {
-			continue
-		}
-		return protocol.NewArrayResponse([]interface{}{key, elements[0]})
-	}
-
 	timeout := ctx
 	if b.Timeout != 0.0 {
 		t, cancel := context.WithTimeout(ctx, time.Duration(b.Timeout*float64(time.Second)))
