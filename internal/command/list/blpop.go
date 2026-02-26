@@ -25,8 +25,13 @@ func (b *BLPop) Execute(ctx context.Context, storage storage.Storage) *protocol.
 		}
 		return protocol.NewArrayResponse([]interface{}{key, elements[0]})
 	}
-	timeout, cancel := context.WithTimeout(ctx, time.Duration(b.Timeout)*time.Second)
-	defer cancel()
+
+	timeout := ctx
+	if b.Timeout != 0.0 {
+		t, cancel := context.WithTimeout(ctx, time.Duration(b.Timeout*float64(time.Second)))
+		timeout = t
+		defer cancel()
+	}
 	ch := lists.BlPop(timeout, b.Keys)
 	data, ok := <-ch
 	if !ok {
