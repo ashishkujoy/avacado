@@ -1,68 +1,51 @@
 package memory
 
-import (
-	"sync"
-)
+import "avacado/internal/storage/lists"
 
-type ListAvailabilityNotifier struct {
-	mu             sync.Mutex
-	awaitingClient map[string][]chan string
+// waitEntry represents a BLPOP client blocked on one or more keys.
+// All operations on listWaiter must be called under ListMemoryStore.mu (write lock).
+type waitEntry struct {
+	keys     []string
+	resultCh chan lists.ListNameToItem
+	served   chan struct{} // closed when a result is delivered
 }
 
-func NewListAvailabilityNotifier() *ListAvailabilityNotifier {
-	return &ListAvailabilityNotifier{
-		mu:             sync.Mutex{},
-		awaitingClient: make(map[string][]chan string),
+// listWaiter tracks clients blocked in BLPOP.
+// It has no mutex of its own; callers must hold ListMemoryStore.mu.Lock().
+type listWaiter struct {
+	awaitingClients map[string][]*waitEntry
+}
+
+func newListWaiter() *listWaiter {
+	return &listWaiter{
+		awaitingClients: make(map[string][]*waitEntry),
 	}
 }
 
-// AwaitFor register for the availability notification of lists specified by the keys
-func (l *ListAvailabilityNotifier) AwaitFor(keys []string) <-chan string {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	ch := make(chan string)
-	// register for all the list keys
-	for _, key := range keys {
-		clients, ok := l.awaitingClient[key]
-		if !ok {
-			clients = make([]chan string, 0)
-		}
-		clients = append(clients, ch)
-		l.awaitingClient[key] = clients
+func (w *listWaiter) register(entry *waitEntry) {
+	for _, key := range entry.keys {
+		w.awaitingClients[key] = append(w.awaitingClients[key], entry)
 	}
-	return ch
 }
 
-// NotifyAvailable notifies the first client about the availability of element in list given key
-func (l *ListAvailabilityNotifier) NotifyAvailable(key string) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	clients, ok := l.awaitingClient[key]
-	if !ok || len(clients) == 0 {
-		return
-	}
-	clients[0] <- key
-}
-
-// DeregisterClients remove the given client from waiting lists specified by keys
-// It should be called by consumer after successful data received on one of the blocked
-// client or on timeout
-func (l *ListAvailabilityNotifier) DeregisterClients(ch <-chan string, keys []string) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-
-	for _, key := range keys {
-		clients, ok := l.awaitingClient[key]
-		if !ok {
-			continue
-		}
-		var newClients []chan string
-		for _, client := range clients {
-			if client != ch {
-				newClients = append(newClients, client)
+// deregister removes entry from all of its watched keys. Safe to call multiple times.
+func (w *listWaiter) deregister(entry *waitEntry) {
+	for _, key := range entry.keys {
+		clients := w.awaitingClients[key]
+		kept := clients[:0]
+		for _, c := range clients {
+			if c != entry {
+				kept = append(kept, c)
 			}
 		}
-		l.awaitingClient[key] = newClients
+		w.awaitingClients[key] = kept
 	}
+}
+
+// firstWaiter returns the first waiting client for key, or nil if none.
+func (w *listWaiter) firstWaiter(key string) *waitEntry {
+	if entries := w.awaitingClients[key]; len(entries) > 0 {
+		return entries[0]
+	}
+	return nil
 }

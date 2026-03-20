@@ -12,68 +12,7 @@ type ListMemoryStore struct {
 	mu              sync.RWMutex
 	lists           map[string]*quickList
 	maxListPackSize int
-	notifier        ListAvailabilityNotifier
-}
-
-func (l *ListMemoryStore) BlPop(ctx context.Context, keys []string) <-chan lists.ListNameToItem {
-	resultCh := make(chan lists.ListNameToItem, 1)
-	// Register BEFORE checking keys to avoid missing a push that arrives
-	// between the check and registration (TOCTOU race).
-	notifyCh := l.notifier.AwaitFor(keys)
-
-	go func() {
-		defer close(resultCh)
-		defer l.notifier.DeregisterClients(notifyCh, keys)
-
-		// Non-blocking check AFTER registration: any push that happened
-		// before AwaitFor will have its data sitting in the list here.
-		for _, key := range keys {
-			l.mu.RLock()
-			list, ok := l.lists[key]
-			l.mu.RUnlock()
-			if !ok {
-				continue
-			}
-			elements, _ := list.lPop(1)
-			if len(elements) > 0 {
-				resultCh <- lists.ListNameToItem{Key: key, Value: elements[0]}
-				return
-			}
-		}
-
-		// All keys empty — block until a push notifies us or context expires.
-		select {
-		case <-ctx.Done():
-			return
-		case key := <-notifyCh:
-			l.mu.RLock()
-			list, ok := l.lists[key]
-			l.mu.RUnlock()
-			if !ok {
-				return
-			}
-			elements, _ := list.lPop(1)
-			if len(elements) == 0 {
-				return
-			}
-			resultCh <- lists.ListNameToItem{Key: key, Value: elements[0]}
-		}
-	}()
-
-	return resultCh
-}
-
-// LIndex finds an element in listPact from left side.
-// return nil byte slice if there is no element at given index
-func (l *ListMemoryStore) LIndex(ctx context.Context, key string, index int) ([]byte, error) {
-	l.mu.RLock()
-	list, found := l.lists[key]
-	l.mu.RUnlock()
-	if !found {
-		return nil, nil
-	}
-	element, _ := list.atIndex(index)
-	return element, nil
+	waiter          *listWaiter
 }
 
 // NewListMemoryStore creates a ListMemoryStore with given maxListPackSize
@@ -82,59 +21,119 @@ func NewListMemoryStore(maxListPackSize int) *ListMemoryStore {
 		mu:              sync.RWMutex{},
 		lists:           make(map[string]*quickList),
 		maxListPackSize: maxListPackSize,
-		notifier:        *NewListAvailabilityNotifier(),
+		waiter:          newListWaiter(),
 	}
 }
 
-// LPush add the given values at the head of quicklist specified by the given key
-// If key is not present a new quicklist entry is created first, followed by
-// pushing elements.
-func (l *ListMemoryStore) LPush(ctx context.Context, key string, values ...[]byte) (int, error) {
-	l.mu.RLock()
+func (l *ListMemoryStore) BlPop(ctx context.Context, keys []string) <-chan lists.ListNameToItem {
+	resultCh := make(chan lists.ListNameToItem, 1)
+	entry := &waitEntry{
+		keys:     keys,
+		resultCh: resultCh,
+		served:   make(chan struct{}),
+	}
 
+	// Register and do initial scan under write lock so that no concurrent
+	// LPush/RPush can slip between registration and the check.
+	l.mu.Lock()
+	l.waiter.register(entry)
+	for _, key := range keys {
+		list, ok := l.lists[key]
+		if !ok {
+			continue
+		}
+		elements, _ := list.lPop(1)
+		if len(elements) > 0 {
+			l.waiter.deregister(entry)
+			l.mu.Unlock()
+			resultCh <- lists.ListNameToItem{Key: key, Value: elements[0]}
+			close(entry.served)
+			return resultCh
+		}
+	}
+	l.mu.Unlock()
+
+	// Goroutine handles only timeout/cancellation.
+	// Serving is done directly by LPush/RPush when they find a waiting entry.
+	go func() {
+		defer close(resultCh)
+		select {
+		case <-ctx.Done():
+			l.mu.Lock()
+			l.waiter.deregister(entry)
+			l.mu.Unlock()
+		case <-entry.served:
+			// Result already delivered to resultCh by LPush/RPush.
+		}
+	}()
+
+	return resultCh
+}
+
+// tryServeWaiter checks if a BLPOP client is waiting for key; if so, pops one
+// element and returns the entry and value so the caller can deliver outside the lock.
+// Must be called under l.mu.Lock().
+func (l *ListMemoryStore) tryServeWaiter(key string) (*waitEntry, []byte) {
+	entry := l.waiter.firstWaiter(key)
+	if entry == nil {
+		return nil, nil
+	}
+	list, ok := l.lists[key]
+	if !ok {
+		return nil, nil
+	}
+	elements, _ := list.lPop(1)
+	if len(elements) == 0 {
+		return nil, nil
+	}
+	l.waiter.deregister(entry)
+	return entry, elements[0]
+}
+
+// LPush add the given values at the head of quicklist specified by the given key.
+// If key is not present a new quicklist entry is created first.
+func (l *ListMemoryStore) LPush(ctx context.Context, key string, values ...[]byte) (int, error) {
+	l.mu.Lock()
 	list, ok := l.lists[key]
 	if !ok {
 		list = newQuickList(l.maxListPackSize)
-		l.mu.RUnlock()
-		l.mu.Lock()
 		l.lists[key] = list
-		l.mu.Unlock()
-	} else {
-		l.mu.RUnlock()
 	}
 	length := list.lPush(values)
-	l.notifier.NotifyAvailable(key)
+	entry, value := l.tryServeWaiter(key)
+	l.mu.Unlock()
+
+	// Deliver outside the lock: resultCh has buffer=1 and entry is exclusively
+	// ours after deregister, so this send never blocks.
+	if entry != nil {
+		entry.resultCh <- lists.ListNameToItem{Key: key, Value: value}
+		close(entry.served)
+	}
 	return length, nil
 }
 
-// RPush add the given values at the end of quicklist specified by the given key
-// If key is not present a new quicklist entry is created first, followed by
-// pushing elements.
-// RPush try to manually release the read or write lock to allow maximum possible
-// concurrency.
+// RPush add the given values at the end of quicklist specified by the given key.
+// If key is not present a new quicklist entry is created first.
 func (l *ListMemoryStore) RPush(ctx context.Context, key string, values ...[]byte) (int, error) {
-	l.mu.RLock()
-
+	l.mu.Lock()
 	list, ok := l.lists[key]
 	if !ok {
 		list = newQuickList(l.maxListPackSize)
-		// Release read lock, need to get a write lock
-		l.mu.RUnlock()
-		l.mu.Lock()
 		l.lists[key] = list
-		// Release write lock
-		l.mu.Unlock()
-	} else {
-		// Release read lock
-		l.mu.RUnlock()
 	}
 	length := list.rPush(values)
-	l.notifier.NotifyAvailable(key)
+	entry, value := l.tryServeWaiter(key)
+	l.mu.Unlock()
+
+	if entry != nil {
+		entry.resultCh <- lists.ListNameToItem{Key: key, Value: value}
+		close(entry.served)
+	}
 	return length, nil
 }
 
-// LPop remove the given number of values from the head of quicklist specified by the given key
-// If key is not present a nil slice is returned
+// LPop remove the given number of values from the head of quicklist specified by the given key.
+// If key is not present a nil slice is returned.
 func (l *ListMemoryStore) LPop(ctx context.Context, key string, count int) ([][]byte, error) {
 	l.mu.RLock()
 	list, ok := l.lists[key]
@@ -146,10 +145,8 @@ func (l *ListMemoryStore) LPop(ctx context.Context, key string, count int) ([][]
 	return elements, nil
 }
 
-// RPop remove the given number of values from the end of quicklist specified by the given key
-// If key is not present a nil slice is return
-// RPop try to manually release the read or write lock to allow maximum possible
-// concurrency.
+// RPop remove the given number of values from the end of quicklist specified by the given key.
+// If key is not present a nil slice is returned.
 func (l *ListMemoryStore) RPop(ctx context.Context, key string, count int) ([][]byte, error) {
 	l.mu.RLock()
 	list, ok := l.lists[key]
@@ -161,7 +158,20 @@ func (l *ListMemoryStore) RPop(ctx context.Context, key string, count int) ([][]
 	return elements, nil
 }
 
-// Len return the count of elements present in listpack of given key
+// LIndex finds an element in listPack from left side.
+// Returns nil if there is no element at the given index.
+func (l *ListMemoryStore) LIndex(ctx context.Context, key string, index int) ([]byte, error) {
+	l.mu.RLock()
+	list, found := l.lists[key]
+	l.mu.RUnlock()
+	if !found {
+		return nil, nil
+	}
+	element, _ := list.atIndex(index)
+	return element, nil
+}
+
+// Len returns the count of elements in the list at the given key.
 func (l *ListMemoryStore) Len(ctx context.Context, key string) (int, error) {
 	l.mu.RLock()
 	list, ok := l.lists[key]
