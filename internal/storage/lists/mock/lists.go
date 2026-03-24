@@ -55,6 +55,20 @@ func (mr *MockListsMockRecorder) BlPop(ctx, keys any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BlPop", reflect.TypeOf((*MockLists)(nil).BlPop), ctx, keys)
 }
 
+// BrPop mocks base method.
+func (m *MockLists) BrPop(ctx context.Context, keys []string) <-chan lists.ListNameToItem {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "BrPop", ctx, keys)
+	ret0, _ := ret[0].(<-chan lists.ListNameToItem)
+	return ret0
+}
+
+// BrPop indicates an expected call of BrPop.
+func (mr *MockListsMockRecorder) BrPop(ctx, keys any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "BrPop", reflect.TypeOf((*MockLists)(nil).BrPop), ctx, keys)
+}
+
 // LIndex mocks base method.
 func (m *MockLists) LIndex(ctx context.Context, key string, index int) ([]byte, error) {
 	m.ctrl.T.Helper()

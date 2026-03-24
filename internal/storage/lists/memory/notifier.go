@@ -2,12 +2,13 @@ package memory
 
 import "avacado/internal/storage/lists"
 
-// waitEntry represents a BLPOP client blocked on one or more keys.
+// waitEntry represents a BLPOP/BRPOP client blocked on one or more keys.
 // All operations on listWaiter must be called under ListMemoryStore.mu (write lock).
 type waitEntry struct {
-	keys     []string
-	resultCh chan lists.ListNameToItem
-	served   chan struct{} // closed when a result is delivered
+	keys         []string
+	resultCh     chan lists.ListNameToItem
+	served       chan struct{} // closed when a result is delivered
+	popDirection lists.Direction
 }
 
 // listWaiter tracks clients blocked in BLPOP.

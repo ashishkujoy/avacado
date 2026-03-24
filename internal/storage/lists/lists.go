@@ -25,6 +25,7 @@ type Lists interface {
 	Len(ctx context.Context, key string) (int, error)
 	LIndex(ctx context.Context, key string, index int) ([]byte, error)
 	BlPop(ctx context.Context, keys []string) <-chan ListNameToItem
+	BrPop(ctx context.Context, keys []string) <-chan ListNameToItem
 	LRange(ctx context.Context, key string, start, end int64) ([][]byte, error)
 	LMove(ctx context.Context, source, destination string, sourceDirection, destinationDirection Direction) ([]byte, error)
 }

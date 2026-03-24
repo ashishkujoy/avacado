@@ -294,6 +294,50 @@ func TestBLPop_MultipleKeys(t *testing.T) {
 	assert.Equal(t, []string{"blpop_mk2", "first"}, result)
 }
 
+func TestBRPop_ImmediatelyAvailable(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "brpop1", "a", "b", "c")
+
+	result, err := testClient.BRPop(ctx, time.Second, "brpop1").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"brpop1", "c"}, result)
+}
+
+func TestBRPop_BlocksUntilPush(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		testClient.RPush(ctx, "brpop2", "hello")
+	}()
+
+	result, err := testClient.BRPop(ctx, 2*time.Second, "brpop2").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"brpop2", "hello"}, result)
+}
+
+func TestBRPop_Timeout(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	_, err := testClient.BRPop(ctx, 200*time.Millisecond, "brpop_empty").Result()
+	assert.Equal(t, redis.Nil, err)
+}
+
+func TestBRPop_MultipleKeys(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "brpop_mk2", "first")
+
+	result, err := testClient.BRPop(ctx, time.Second, "brpop_mk1", "brpop_mk2").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"brpop_mk2", "first"}, result)
+}
+
 func TestLRange_FullList(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

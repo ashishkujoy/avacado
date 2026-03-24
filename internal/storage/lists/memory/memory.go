@@ -25,12 +25,13 @@ func NewListMemoryStore(maxListPackSize int) *ListMemoryStore {
 	}
 }
 
-func (l *ListMemoryStore) BlPop(ctx context.Context, keys []string) <-chan lists.ListNameToItem {
+func (l *ListMemoryStore) blrPop(ctx context.Context, keys []string, dir lists.Direction) <-chan lists.ListNameToItem {
 	resultCh := make(chan lists.ListNameToItem, 1)
 	entry := &waitEntry{
-		keys:     keys,
-		resultCh: resultCh,
-		served:   make(chan struct{}),
+		keys:         keys,
+		resultCh:     resultCh,
+		served:       make(chan struct{}),
+		popDirection: dir,
 	}
 
 	// Register and do initial scan under write lock so that no concurrent
@@ -42,7 +43,12 @@ func (l *ListMemoryStore) BlPop(ctx context.Context, keys []string) <-chan lists
 		if !ok {
 			continue
 		}
-		elements, _ := list.lPop(1)
+		var elements [][]byte
+		if dir == lists.Left {
+			elements, _ = list.lPop(1)
+		} else {
+			elements, _ = list.rPop(1)
+		}
 		if len(elements) > 0 {
 			l.waiter.deregister(entry)
 			l.mu.Unlock()
@@ -70,8 +76,17 @@ func (l *ListMemoryStore) BlPop(ctx context.Context, keys []string) <-chan lists
 	return resultCh
 }
 
-// tryServeWaiter checks if a BLPOP client is waiting for key; if so, pops one
-// element and returns the entry and value so the caller can deliver outside the lock.
+func (l *ListMemoryStore) BlPop(ctx context.Context, keys []string) <-chan lists.ListNameToItem {
+	return l.blrPop(ctx, keys, lists.Left)
+}
+
+func (l *ListMemoryStore) BrPop(ctx context.Context, keys []string) <-chan lists.ListNameToItem {
+	return l.blrPop(ctx, keys, lists.Right)
+}
+
+// tryServeWaiter checks if a BLPOP/BRPOP client is waiting for key; if so, pops one
+// element (using the waiter's pop direction) and returns the entry and value so
+// the caller can deliver outside the lock.
 // Must be called under l.mu.Lock().
 func (l *ListMemoryStore) tryServeWaiter(key string) (*waitEntry, []byte) {
 	entry := l.waiter.firstWaiter(key)
@@ -82,7 +97,12 @@ func (l *ListMemoryStore) tryServeWaiter(key string) (*waitEntry, []byte) {
 	if !ok {
 		return nil, nil
 	}
-	elements, _ := list.lPop(1)
+	var elements [][]byte
+	if entry.popDirection == lists.Left {
+		elements, _ = list.lPop(1)
+	} else {
+		elements, _ = list.rPop(1)
+	}
 	if len(elements) == 0 {
 		return nil, nil
 	}
