@@ -358,6 +358,117 @@ func TestLRange_StartGreaterThanEnd(t *testing.T) {
 	assert.Equal(t, []string{}, vals)
 }
 
+func TestLMove_LeftToLeft(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lmove1_src", "a", "b", "c")
+
+	val, err := testClient.LMove(ctx, "lmove1_src", "lmove1_dst", "LEFT", "LEFT").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "a", val)
+
+	// src should now be [b, c]
+	srcVals, _ := testClient.LRange(ctx, "lmove1_src", 0, -1).Result()
+	assert.Equal(t, []string{"b", "c"}, srcVals)
+
+	// dst should be [a]
+	dstVals, _ := testClient.LRange(ctx, "lmove1_dst", 0, -1).Result()
+	assert.Equal(t, []string{"a"}, dstVals)
+}
+
+func TestLMove_RightToLeft(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lmove2_src", "a", "b", "c")
+
+	val, err := testClient.LMove(ctx, "lmove2_src", "lmove2_dst", "RIGHT", "LEFT").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "c", val)
+
+	// src should now be [a, b]
+	srcVals, _ := testClient.LRange(ctx, "lmove2_src", 0, -1).Result()
+	assert.Equal(t, []string{"a", "b"}, srcVals)
+
+	// dst should be [c]
+	dstVals, _ := testClient.LRange(ctx, "lmove2_dst", 0, -1).Result()
+	assert.Equal(t, []string{"c"}, dstVals)
+}
+
+func TestLMove_LeftToRight(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lmove3_src", "a", "b", "c")
+	testClient.RPush(ctx, "lmove3_dst", "x", "y")
+
+	val, err := testClient.LMove(ctx, "lmove3_src", "lmove3_dst", "LEFT", "RIGHT").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "a", val)
+
+	// dst should be [x, y, a]
+	dstVals, _ := testClient.LRange(ctx, "lmove3_dst", 0, -1).Result()
+	assert.Equal(t, []string{"x", "y", "a"}, dstVals)
+}
+
+func TestLMove_RightToRight(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lmove4_src", "a", "b", "c")
+	testClient.RPush(ctx, "lmove4_dst", "x", "y")
+
+	val, err := testClient.LMove(ctx, "lmove4_src", "lmove4_dst", "RIGHT", "RIGHT").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "c", val)
+
+	// dst should be [x, y, c]
+	dstVals, _ := testClient.LRange(ctx, "lmove4_dst", 0, -1).Result()
+	assert.Equal(t, []string{"x", "y", "c"}, dstVals)
+}
+
+func TestLMove_NonExistingSource(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	_, err := testClient.LMove(ctx, "lmove_nonexistent_src", "lmove5_dst", "LEFT", "LEFT").Result()
+	assert.Equal(t, redis.Nil, err)
+}
+
+func TestLMove_SameKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lmove6", "a", "b", "c")
+
+	// LMOVE src src LEFT RIGHT rotates the list: [a,b,c] -> [b,c,a]
+	val, err := testClient.LMove(ctx, "lmove6", "lmove6", "LEFT", "RIGHT").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "a", val)
+
+	vals, _ := testClient.LRange(ctx, "lmove6", 0, -1).Result()
+	assert.Equal(t, []string{"b", "c", "a"}, vals)
+}
+
+func TestLMove_SingleElementSource(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lmove7_src", "only")
+
+	val, err := testClient.LMove(ctx, "lmove7_src", "lmove7_dst", "LEFT", "LEFT").Result()
+	assert.NoError(t, err)
+	assert.Equal(t, "only", val)
+
+	// src should now be empty (key gone)
+	srcLen, _ := testClient.LLen(ctx, "lmove7_src").Result()
+	assert.Equal(t, int64(0), srcLen)
+
+	dstVals, _ := testClient.LRange(ctx, "lmove7_dst", 0, -1).Result()
+	assert.Equal(t, []string{"only"}, dstVals)
+}
+
 func TestList_PushPopLen(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

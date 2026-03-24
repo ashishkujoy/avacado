@@ -70,6 +70,21 @@ func (mr *MockListsMockRecorder) LIndex(ctx, key, index any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LIndex", reflect.TypeOf((*MockLists)(nil).LIndex), ctx, key, index)
 }
 
+// LMove mocks base method.
+func (m *MockLists) LMove(ctx context.Context, source, destination string, sourceDirection, destinationDirection lists.Direction) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LMove", ctx, source, destination, sourceDirection, destinationDirection)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LMove indicates an expected call of LMove.
+func (mr *MockListsMockRecorder) LMove(ctx, source, destination, sourceDirection, destinationDirection any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LMove", reflect.TypeOf((*MockLists)(nil).LMove), ctx, source, destination, sourceDirection, destinationDirection)
+}
+
 // LPop mocks base method.
 func (m *MockLists) LPop(ctx context.Context, key string, count int) ([][]byte, error) {
 	m.ctrl.T.Helper()
