@@ -181,3 +181,13 @@ func (l *ListMemoryStore) Len(ctx context.Context, key string) (int, error) {
 	}
 	return list.length(), nil
 }
+
+func (l *ListMemoryStore) LRange(ctx context.Context, key string, start, end int64) ([][]byte, error) {
+	l.mu.RLock()
+	ql, ok := l.lists[key]
+	l.mu.RUnlock()
+	if !ok {
+		return [][]byte{}, nil
+	}
+	return ql.lRange(start, end), nil
+}

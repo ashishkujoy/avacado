@@ -294,6 +294,70 @@ func TestBLPop_MultipleKeys(t *testing.T) {
 	assert.Equal(t, []string{"blpop_mk2", "first"}, result)
 }
 
+func TestLRange_FullList(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lrange1", "a", "b", "c")
+
+	vals, err := testClient.LRange(ctx, "lrange1", 0, -1).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "b", "c"}, vals)
+}
+
+func TestLRange_PositiveIndices(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lrange2", "a", "b", "c", "d", "e")
+
+	vals, err := testClient.LRange(ctx, "lrange2", 1, 3).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"b", "c", "d"}, vals)
+}
+
+func TestLRange_NegativeIndices(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lrange3", "a", "b", "c", "d", "e")
+
+	vals, err := testClient.LRange(ctx, "lrange3", -3, -1).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"c", "d", "e"}, vals)
+}
+
+func TestLRange_OutOfBoundsClampedToList(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lrange4", "a", "b", "c")
+
+	vals, err := testClient.LRange(ctx, "lrange4", -100, 100).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"a", "b", "c"}, vals)
+}
+
+func TestLRange_NonExistingKey(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	vals, err := testClient.LRange(ctx, "lrange_nonexistent", 0, -1).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{}, vals)
+}
+
+func TestLRange_StartGreaterThanEnd(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	testClient.RPush(ctx, "lrange5", "a", "b", "c")
+
+	vals, err := testClient.LRange(ctx, "lrange5", 3, 1).Result()
+	assert.NoError(t, err)
+	assert.Equal(t, []string{}, vals)
+}
+
 func TestList_PushPopLen(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

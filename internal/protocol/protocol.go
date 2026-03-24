@@ -168,10 +168,10 @@ func NewNumberResponse(n int64) *Response {
 	return NewSuccessResponse(NewNumberProtocolValue(n))
 }
 
-func NewArrayResponse(values []interface{}) *Response {
+func NewArrayResponse[T any](values []T) *Response {
 	protocolValues := make([]Value, len(values))
 	for i, v := range values {
-		switch val := v.(type) {
+		switch val := any(v).(type) {
 		case string:
 			protocolValues[i] = NewStringProtocolValue(val)
 		case []byte:

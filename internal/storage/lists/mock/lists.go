@@ -105,6 +105,21 @@ func (mr *MockListsMockRecorder) LPush(ctx, key any, values ...any) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LPush", reflect.TypeOf((*MockLists)(nil).LPush), varargs...)
 }
 
+// LRange mocks base method.
+func (m *MockLists) LRange(ctx context.Context, key string, start, end int64) ([][]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LRange", ctx, key, start, end)
+	ret0, _ := ret[0].([][]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LRange indicates an expected call of LRange.
+func (mr *MockListsMockRecorder) LRange(ctx, key, start, end any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LRange", reflect.TypeOf((*MockLists)(nil).LRange), ctx, key, start, end)
+}
+
 // Len mocks base method.
 func (m *MockLists) Len(ctx context.Context, key string) (int, error) {
 	m.ctrl.T.Helper()

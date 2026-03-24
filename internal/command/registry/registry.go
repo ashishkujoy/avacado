@@ -40,6 +40,7 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 	registry.Register(list.NewRPopParser())
 	registry.Register(list.NewBLPopParser())
 	registry.Register(list.NewLIndexParser())
+	registry.Register(list.NewLRangeParser())
 
 	return registry
 }

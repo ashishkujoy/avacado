@@ -569,6 +569,9 @@ func encode32BitStr(buf []byte, offset int, s []byte) int {
 // Returns the offset at which traversal ended and any error.
 func traverse(buf []byte, offset int, fn func(element interface{}) (bool, error)) (int, error) {
 	for offset < len(buf) {
+		if buf[offset] == 0xFF {
+			break
+		}
 		value, newOffset, err := decode(buf, offset)
 		if err != nil {
 			return offset, err
