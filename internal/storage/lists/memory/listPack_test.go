@@ -186,3 +186,34 @@ func TestListMemoryStore_LIndex(t *testing.T) {
 		assert.Nil(t, element)
 	})
 }
+
+func TestListPack_LRange(t *testing.T) {
+	t.Run("from zero index to last", func(t *testing.T) {
+		lp := newListPack(60, []byte("Hi"), []byte("hello World"), []byte("12"))
+		elements, err := lp.lRange(0, 3)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, len(elements))
+		assert.Equal(t, []byte("Hi"), elements[0])
+		assert.Equal(t, []byte("hello World"), elements[1])
+		assert.Equal(t, []byte("12"), elements[2])
+	})
+
+	t.Run("from non zero index to last", func(t *testing.T) {
+		lp := newListPack(60, []byte("Hi"), []byte("hello World"), []byte("12"), []byte("43"))
+		elements, err := lp.lRange(1, 3)
+		assert.NoError(t, err)
+		assert.Equal(t, 3, len(elements))
+		assert.Equal(t, []byte("hello World"), elements[0])
+		assert.Equal(t, []byte("12"), elements[1])
+		assert.Equal(t, []byte("43"), elements[2])
+	})
+
+	t.Run("from non zero index to non last", func(t *testing.T) {
+		lp := newListPack(60, []byte("Hi"), []byte("hello World"), []byte("12"), []byte("43"))
+		elements, err := lp.lRange(1, 2)
+		assert.NoError(t, err)
+		assert.Equal(t, 2, len(elements))
+		assert.Equal(t, []byte("hello World"), elements[0])
+		assert.Equal(t, []byte("12"), elements[1])
+	})
+}

@@ -23,7 +23,6 @@ func newEmptyListPack(maxSize int) *listPack {
 
 func newListPack(maxSize int, elements ...[]byte) *listPack {
 	lp := newEmptyListPack(maxSize)
-	lp.byteSize()
 	for _, e := range elements {
 		_, _ = lp.push(e)
 	}
@@ -188,4 +187,32 @@ func isLargerThanListPackSize(value []byte, maxListPackSize int) bool {
 func newPlainListPack(element []byte) *listPack {
 	size := 6 + encodedSize(element) + 1
 	return newListPack(size, element)
+}
+
+func (lp *listPack) lRange(start, end int64) ([][]byte, error) {
+	lp.mu.Lock()
+	defer lp.mu.Unlock()
+	size := binary.BigEndian.Uint32(lp.data[:4]) - 1
+	index := int64(0)
+	var elements [][]byte
+	_, err := traverse(lp.data[6:size], 0, func(elem interface{}) (bool, error) {
+		if index < start {
+			index++
+			return true, nil
+		}
+		if index > end {
+			return false, nil
+		}
+		var element []byte
+		switch elem.(type) {
+		case []byte:
+			element = elem.([]byte)
+		case int:
+			element = []byte(fmt.Sprintf("%d", elem.(int)))
+		}
+		elements = append(elements, element)
+		index++
+		return true, nil
+	})
+	return elements, err
 }
