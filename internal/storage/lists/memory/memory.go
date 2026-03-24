@@ -191,3 +191,39 @@ func (l *ListMemoryStore) LRange(ctx context.Context, key string, start, end int
 	}
 	return ql.lRange(start, end), nil
 }
+
+func (l *ListMemoryStore) LMove(
+	ctx context.Context,
+	source, destination string,
+	sourceDirection, destinationDirection lists.Direction,
+) ([]byte, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	sList, ok := l.lists[source]
+	if !ok {
+		return nil, nil
+	}
+	var poppedElements [][]byte
+	if sourceDirection == lists.Left {
+		poppedElements, _ = sList.lPop(1)
+	} else {
+		poppedElements, _ = sList.rPop(1)
+	}
+
+	if len(poppedElements) == 0 {
+		return nil, nil
+	}
+
+	dList, ok := l.lists[destination]
+	if !ok {
+		dList = newQuickList(l.maxListPackSize)
+		l.lists[destination] = dList
+	}
+	if destinationDirection == lists.Left {
+		dList.lPush(poppedElements)
+	} else {
+		dList.rPush(poppedElements)
+	}
+
+	return poppedElements[0], nil
+}

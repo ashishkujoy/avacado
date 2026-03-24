@@ -7,6 +7,13 @@ type ListNameToItem struct {
 	Value []byte
 }
 
+type Direction = string
+
+const (
+	Left  = "left"
+	Right = "right"
+)
+
 // Lists represent list data structure supported by the storage
 //
 //go:generate sh -c "rm -f mock/lists.go && mockgen -source=lists.go -destination=mock/lists.go -package=mocklists"
@@ -19,4 +26,5 @@ type Lists interface {
 	LIndex(ctx context.Context, key string, index int) ([]byte, error)
 	BlPop(ctx context.Context, keys []string) <-chan ListNameToItem
 	LRange(ctx context.Context, key string, start, end int64) ([][]byte, error)
+	LMove(ctx context.Context, source, destination string, sourceDirection, destinationDirection Direction) ([]byte, error)
 }
