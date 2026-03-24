@@ -152,3 +152,60 @@ func (ql *quickList) atIndex(index int) ([]byte, bool) {
 	}
 	return nil, false
 }
+
+// lRange return elements from start to end(inclusive) index
+func (ql *quickList) lRange(start, end int64) [][]byte {
+	ql.mu.RLock()
+	defer ql.mu.RUnlock()
+
+	size := int64(ql.size)
+
+	if start < 0 {
+		start = size + start
+	}
+	if end < 0 {
+		end = size + end
+	}
+
+	if start < 0 {
+		start = 0
+	}
+	if end >= size {
+		end = size - 1
+	}
+
+	// Empty / inverted range
+	if size == 0 || start > end {
+		return [][]byte{}
+	}
+
+	var result [][]byte
+	offset := int64(0)
+
+	for _, lp := range ql.lps {
+		lpLen := int64(lp.length())
+		lpEndGlobal := offset + lpLen - 1
+
+		// This listPack has no overlap with [start, end]
+		if lpEndGlobal < start || offset > end {
+			offset += lpLen
+			continue
+		}
+
+		// Translate global range into local listPack indices
+		localStart := start - offset
+		if localStart < 0 {
+			localStart = 0
+		}
+		localEnd := end - offset
+		if localEnd >= lpLen {
+			localEnd = lpLen - 1
+		}
+
+		elements, _ := lp.lRange(localStart, localEnd)
+		result = append(result, elements...)
+		offset += lpLen
+	}
+
+	return result
+}

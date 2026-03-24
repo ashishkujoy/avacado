@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -88,4 +89,41 @@ func TestQuickList_AtIndex(t *testing.T) {
 	element, found = ql.atIndex(-6)
 	assert.False(t, found)
 	assert.Nil(t, element)
+}
+
+func TestQuickList_LRange(t *testing.T) {
+	ql := newQuickList(20)
+	elements := [][]byte{
+		[]byte("12"),
+		[]byte("abcdefghi"),
+		[]byte("1"),
+		[]byte("Hello"),
+		[]byte("Hello World"),
+	}
+	ql.rPush(elements)
+	// ensure we have three listPacks
+	assert.Equal(t, 3, len(ql.lps))
+
+	t.Run("positive start and end", func(t *testing.T) {
+		assert.Equal(t, elements, ql.lRange(0, 10))
+		assert.Equal(t, elements, ql.lRange(0, 5))
+		assert.Equal(t, elements, ql.lRange(0, 4))
+		assert.Equal(t, elements[0:4], ql.lRange(0, 3))
+	})
+
+	t.Run("Negative start", func(t *testing.T) {
+		assert.Equal(t, elements[3:], ql.lRange(-2, 10))
+		assert.Equal(t, elements, ql.lRange(-20, 10))
+	})
+
+	t.Run("Negative end", func(t *testing.T) {
+		assert.Equal(t, elements[2:], ql.lRange(2, -1))
+	})
+}
+
+func equalSlices(actual, expected [][]byte, t *testing.T) {
+	assert.Equal(t, len(expected), len(actual), "Actual and expected have different length")
+	for i, actualElem := range actual {
+		assert.Equal(t, expected[i], actualElem, fmt.Sprintf("Elements differ at %d", i))
+	}
 }
