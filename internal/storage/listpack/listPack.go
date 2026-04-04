@@ -216,3 +216,8 @@ func (lp *ListPack) LRange(start, end int64) ([][]byte, error) {
 	})
 	return elements, err
 }
+
+func (lp *ListPack) Traverse(cb func(interface{}) (bool, error)) error {
+	_, err := traverse(lp.data[6:], 0, cb)
+	return err
+}
