@@ -1,12 +1,15 @@
 package memory
 
-import "sync"
+import (
+	"avacado/internal/storage/listpack"
+	"sync"
+)
 
 const defaultMaxListPackSize = 1024 * 8
 
 // quickList represents a quick list data structure used for storing lists in memory.
 type quickList struct {
-	lps             []*listPack
+	lps             []*listpack.ListPack
 	mu              sync.RWMutex
 	maxListPackSize int
 	size            int
@@ -14,7 +17,7 @@ type quickList struct {
 
 func newQuickList(maxListPackSize int) *quickList {
 	return &quickList{
-		lps:             []*listPack{newEmptyListPack(maxListPackSize)},
+		lps:             []*listpack.ListPack{listpack.NewEmptyListPack(maxListPackSize)},
 		mu:              sync.RWMutex{},
 		maxListPackSize: maxListPackSize,
 		size:            0,
@@ -32,21 +35,21 @@ func (ql *quickList) lPush(elements [][]byte) int {
 	ql.mu.Lock()
 	defer ql.mu.Unlock()
 	for _, element := range elements {
-		if isLargerThanListPackSize(element, ql.maxListPackSize) {
-			lp := newPlainListPack(element)
-			if ql.lps[0].length() == 0 {
+		if listpack.IsLargerThanListPackSize(element, ql.maxListPackSize) {
+			lp := listpack.NewPlainListPack(element)
+			if ql.lps[0].Length() == 0 {
 				ql.lps[0] = lp
 			} else {
-				ql.lps = append([]*listPack{lp}, ql.lps...)
+				ql.lps = append([]*listpack.ListPack{lp}, ql.lps...)
 			}
 			ql.size++
 			return ql.size
 		}
-		_, err := ql.lps[0].lPush(element)
+		_, err := ql.lps[0].LPush(element)
 		if err != nil {
-			lp := newEmptyListPack(ql.maxListPackSize)
-			_, _ = lp.lPush(element)
-			ql.lps = append([]*listPack{lp}, ql.lps...)
+			lp := listpack.NewEmptyListPack(ql.maxListPackSize)
+			_, _ = lp.LPush(element)
+			ql.lps = append([]*listpack.ListPack{lp}, ql.lps...)
 		}
 		ql.size++
 	}
@@ -58,10 +61,10 @@ func (ql *quickList) rPush(elements [][]byte) int {
 	ql.mu.Lock()
 	defer ql.mu.Unlock()
 	for _, element := range elements {
-		// if element is larger than maxListPackSize, we need to create a plain listPack for it
-		if isLargerThanListPackSize(element, ql.maxListPackSize) {
-			lp := newPlainListPack(element)
-			if ql.lps[len(ql.lps)-1].length() == 0 {
+		// if element is larger than maxListPackSize, we need to create a plain ListPack for it
+		if listpack.IsLargerThanListPackSize(element, ql.maxListPackSize) {
+			lp := listpack.NewPlainListPack(element)
+			if ql.lps[len(ql.lps)-1].Length() == 0 {
 				// Tail is empty — replace it rather than leaving an orphaned node.
 				ql.lps[len(ql.lps)-1] = lp
 			} else {
@@ -70,10 +73,10 @@ func (ql *quickList) rPush(elements [][]byte) int {
 			ql.size++
 			return ql.size
 		}
-		_, err := ql.lps[len(ql.lps)-1].push(element)
+		_, err := ql.lps[len(ql.lps)-1].Push(element)
 		if err != nil {
-			lp := newEmptyListPack(ql.maxListPackSize)
-			_, _ = lp.push(element)
+			lp := listpack.NewEmptyListPack(ql.maxListPackSize)
+			_, _ = lp.Push(element)
 			ql.lps = append(ql.lps, lp)
 		}
 		ql.size++
@@ -92,16 +95,16 @@ func (ql *quickList) lPop(count int) ([][]byte, int) {
 	length := 0
 	for ; length < count; length++ {
 		head := ql.lps[0]
-		if head.isEmpty() {
+		if head.IsEmpty() {
 			break
 		}
-		popped := head.lPop(1)
+		popped := head.LPop(1)
 		if len(popped) == 0 {
 			break
 		}
 		elements[length] = popped[0]
 		ql.size -= 1
-		if head.isEmpty() && len(ql.lps) > 1 {
+		if head.IsEmpty() && len(ql.lps) > 1 {
 			ql.lps = ql.lps[1:]
 		}
 	}
@@ -119,13 +122,13 @@ func (ql *quickList) rPop(count int) ([][]byte, int) {
 	length := 0
 	for ; length < count; length++ {
 		tail := ql.lps[len(ql.lps)-1]
-		if tail.isEmpty() {
+		if tail.IsEmpty() {
 			break
 		}
-		element := tail.pop()
+		element := tail.Pop()
 		elements[length] = element
 		ql.size -= 1
-		if tail.isEmpty() && len(ql.lps) > 1 {
+		if tail.IsEmpty() && len(ql.lps) > 1 {
 			ql.lps = ql.lps[:len(ql.lps)-1]
 		}
 	}
@@ -144,9 +147,9 @@ func (ql *quickList) atIndex(index int) ([]byte, bool) {
 
 	endIndex := 0
 	for _, lp := range ql.lps {
-		lpLength := lp.length()
+		lpLength := lp.Length()
 		if endIndex+lpLength > index {
-			return lp.atIndex(index - endIndex)
+			return lp.AtIndex(index - endIndex)
 		}
 		endIndex += lpLength
 	}
@@ -183,16 +186,16 @@ func (ql *quickList) lRange(start, end int64) [][]byte {
 	offset := int64(0)
 
 	for _, lp := range ql.lps {
-		lpLen := int64(lp.length())
+		lpLen := int64(lp.Length())
 		lpEndGlobal := offset + lpLen - 1
 
-		// This listPack has no overlap with [start, end]
+		// This ListPack has no overlap with [start, end]
 		if lpEndGlobal < start || offset > end {
 			offset += lpLen
 			continue
 		}
 
-		// Translate global range into local listPack indices
+		// Translate global range into local ListPack indices
 		localStart := start - offset
 		if localStart < 0 {
 			localStart = 0
@@ -202,7 +205,7 @@ func (ql *quickList) lRange(start, end int64) [][]byte {
 			localEnd = lpLen - 1
 		}
 
-		elements, _ := lp.lRange(localStart, localEnd)
+		elements, _ := lp.LRange(localStart, localEnd)
 		result = append(result, elements...)
 		offset += lpLen
 	}

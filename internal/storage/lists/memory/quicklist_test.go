@@ -14,7 +14,7 @@ func TestQuickList_RPush(t *testing.T) {
 	ql.rPush([][]byte{
 		[]byte("world"),
 		[]byte("avacado"),
-		[]byte("listPack"),
+		[]byte("ListPack"),
 	})
 
 	assert.Equal(t, 4, ql.length())
@@ -25,7 +25,7 @@ func TestQuickList_RPop(t *testing.T) {
 	ql.rPush([][]byte{[]byte("12"), []byte("abcdefghi")})
 
 	assert.Equal(t, 1, len(ql.lps))
-	// should create a new listPack here
+	// should create a new ListPack here
 	ql.rPush([][]byte{[]byte("Hello")})
 	assert.Equal(t, 2, len(ql.lps))
 	ql.rPush([][]byte{[]byte("1")})
@@ -122,7 +122,7 @@ func TestQuickList_LRange(t *testing.T) {
 }
 
 func equalSlices(actual, expected [][]byte, t *testing.T) {
-	assert.Equal(t, len(expected), len(actual), "Actual and expected have different length")
+	assert.Equal(t, len(expected), len(actual), "Actual and expected have different Length")
 	for i, actualElem := range actual {
 		assert.Equal(t, expected[i], actualElem, fmt.Sprintf("Elements differ at %d", i))
 	}

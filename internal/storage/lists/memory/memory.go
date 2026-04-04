@@ -85,7 +85,7 @@ func (l *ListMemoryStore) BrPop(ctx context.Context, keys []string) <-chan lists
 }
 
 // tryServeWaiter checks if a BLPOP/BRPOP client is waiting for key; if so, pops one
-// element (using the waiter's pop direction) and returns the entry and value so
+// element (using the waiter's Pop direction) and returns the entry and value so
 // the caller can deliver outside the lock.
 // Must be called under l.mu.Lock().
 func (l *ListMemoryStore) tryServeWaiter(key string) (*waitEntry, []byte) {
@@ -178,7 +178,7 @@ func (l *ListMemoryStore) RPop(ctx context.Context, key string, count int) ([][]
 	return elements, nil
 }
 
-// LIndex finds an element in listPack from left side.
+// LIndex finds an element in ListPack from left side.
 // Returns nil if there is no element at the given index.
 func (l *ListMemoryStore) LIndex(ctx context.Context, key string, index int) ([]byte, error) {
 	l.mu.RLock()

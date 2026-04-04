@@ -1,4 +1,4 @@
-package memory
+package listpack
 
 import (
 	"errors"
@@ -451,7 +451,7 @@ func TestEncode_Overflow(t *testing.T) {
 		assert.Equal(t, 42, v)
 	})
 
-	t.Run("zero-length buffer", func(t *testing.T) {
+	t.Run("zero-Length buffer", func(t *testing.T) {
 		buf := make([]byte, 0)
 		_, err := encode(buf, 0, []byte("1"))
 		assert.Error(t, err)
@@ -474,8 +474,8 @@ func TestEncodedSize(t *testing.T) {
 		{"24-bit int max", []byte("8388607"), 5},
 		{"32-bit int", []byte("8388608"), 6},
 		{"64-bit int", []byte("2147483648"), 10},
-		{"6-bit string empty", []byte(""), 2},   // 1 header + 0 data + 1 backlen
-		{"6-bit string hello", []byte("hello"), 7}, // 1 + 5 + 1
+		{"6-bit string empty", []byte(""), 2},                      // 1 header + 0 data + 1 backlen
+		{"6-bit string hello", []byte("hello"), 7},                 // 1 + 5 + 1
 		{"6-bit string max (63 bytes)", newStringOfLength(63), 65}, // 1 + 63 + 1
 		{"12-bit string (64 bytes)", newStringOfLength(64), 67},    // 2 + 64 + 1
 	}
@@ -497,7 +497,6 @@ func decodeAt(buf []byte, cursor int) (interface{}, error) {
 	value, _, err := decode(buf, entryStart)
 	return value, err
 }
-
 
 func newStringOfLength(n int) []byte {
 	buf := make([]byte, n)

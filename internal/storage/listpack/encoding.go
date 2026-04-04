@@ -1,4 +1,4 @@
-package memory
+package listpack
 
 import (
 	"encoding/binary"
@@ -12,9 +12,9 @@ var unknownTypeError = errors.New("unknown type")
 
 // Encoding type constants
 const (
-	Encoding6bitStr  = 0x80 // 10xxxxxx        (length in lower 6 bits)
-	Encoding12bitStr = 0xE0 // 1110xxxx xxxxxxxx (length in lower 12 bits)
-	Encoding32bitStr = 0xF0 // 11110000 + 4-byte little-endian length
+	Encoding6bitStr  = 0x80 // 10xxxxxx        (Length in lower 6 bits)
+	Encoding12bitStr = 0xE0 // 1110xxxx xxxxxxxx (Length in lower 12 bits)
+	Encoding32bitStr = 0xF0 // 11110000 + 4-byte little-endian Length
 	Encoding13bitInt = 0xC0 // 110xxxxx xxxxxxxx
 	Encoding16bitInt = 0xF1 // 11110001 + 2 bytes
 	Encoding24bitInt = 0xF2 // 11110010 + 3 bytes
@@ -22,7 +22,7 @@ const (
 	Encoding64bitInt = 0xF4 // 11110100 + 8 bytes
 )
 
-// lpEncodeBackLen encodes the backLen field which stores the total entry length
+// lpEncodeBackLen encodes the backLen field which stores the total entry Length
 // (encoding + data) NOT including the backLen itself.
 // BackLen is encoded from right to left with MSB as continuation bit.
 // Returns the number of bytes used for backLen encoding.
@@ -195,7 +195,7 @@ func decode(buf []byte, offset int) (interface{}, int, error) {
 	return nil, offset, unknownEncodingError
 }
 
-// getBackLenSize calculates how many bytes are needed to encode a length
+// getBackLenSize calculates how many bytes are needed to encode a Length
 func getBackLenSize(length uint64) int {
 	if length <= 127 {
 		return 1
@@ -217,7 +217,7 @@ func encode7BitInt(buf []byte, offset int, n int) int {
 	buf[offset] = byte(n) // High bit is 0 automatically
 	offset++
 
-	// Calculate entry length (just the encoding byte, not including backLen)
+	// Calculate entry Length (just the encoding byte, not including backLen)
 	entryLen := uint64(1)
 
 	// Encode backLen
@@ -264,7 +264,7 @@ func encode13BitInt(buf []byte, offset int, n int) int {
 	buf[offset+1] = byte(val & 0xFF)
 	offset += 2
 
-	// Calculate entry length (2 bytes for encoding)
+	// Calculate entry Length (2 bytes for encoding)
 	entryLen := uint64(2)
 
 	// Encode backLen
@@ -314,7 +314,7 @@ func encode16BitInt(buf []byte, offset int, n int) int {
 	binary.LittleEndian.PutUint16(buf[offset+1:], uint16(n))
 	offset += 3
 
-	// Calculate entry length (1 + 2 = 3 bytes)
+	// Calculate entry Length (1 + 2 = 3 bytes)
 	entryLen := uint64(3)
 
 	// Encode backLen
@@ -357,7 +357,7 @@ func encode24BitInt(buf []byte, offset int, n int) int {
 	buf[offset+3] = byte((val >> 16) & 0xFF)
 	offset += 4
 
-	// Calculate entry length (1 + 3 = 4 bytes)
+	// Calculate entry Length (1 + 3 = 4 bytes)
 	entryLen := uint64(4)
 
 	// Encode backLen
@@ -401,7 +401,7 @@ func encode32BitInt(buf []byte, offset int, n int) int {
 	binary.LittleEndian.PutUint32(buf[offset+1:], uint32(n))
 	offset += 5
 
-	// Calculate entry length (1 + 4 = 5 bytes)
+	// Calculate entry Length (1 + 4 = 5 bytes)
 	entryLen := uint64(5)
 
 	// Encode backLen
@@ -436,7 +436,7 @@ func encode64BitInt(buf []byte, offset int, n int) int {
 	binary.LittleEndian.PutUint64(buf[offset+1:], uint64(n))
 	offset += 9
 
-	// Calculate entry length (1 + 8 = 9 bytes)
+	// Calculate entry Length (1 + 8 = 9 bytes)
 	entryLen := uint64(9)
 
 	// Encode backLen
@@ -544,9 +544,9 @@ func decode12BitStr(buf []byte, offset int) ([]byte, int, error) {
 	return result, offset, nil
 }
 
-// encode32BitStr encodes a string of any length with backLen
-// Format: 0xF0 [4-byte little-endian length] [data...] <backLen>
-// Entry structure: encoding(1) + length(4) + data(slen) + backLen
+// encode32BitStr encodes a string of any Length with backLen
+// Format: 0xF0 [4-byte little-endian Length] [data...] <backLen>
+// Entry structure: encoding(1) + Length(4) + data(slen) + backLen
 func encode32BitStr(buf []byte, offset int, s []byte) int {
 	slen := len(s)
 	buf[offset] = Encoding32bitStr
