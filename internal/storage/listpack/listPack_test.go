@@ -217,3 +217,59 @@ func TestListPack_LRange(t *testing.T) {
 		assert.Equal(t, []byte("12"), elements[1])
 	})
 }
+
+func TestListPack_InsertAt(t *testing.T) {
+	t.Run("Insert at the start", func(t *testing.T) {
+		lp := NewListPack(1024, []byte("First Value"))
+		err := lp.InsertAt(0, []byte("Zero Value"))
+		assert.NoError(t, err)
+
+		v, _ := lp.AtIndex(0)
+		assert.Equal(t, "Zero Value", string(v))
+		v, _ = lp.AtIndex(1)
+		assert.Equal(t, "First Value", string(v))
+	})
+	t.Run("Insert at the end", func(t *testing.T) {
+		lp := NewListPack(1024, []byte("First Value"))
+		err := lp.InsertAt(1, []byte("Second Value"))
+		assert.NoError(t, err)
+
+		v, _ := lp.AtIndex(0)
+		assert.Equal(t, "First Value", string(v))
+		v, _ = lp.AtIndex(1)
+		assert.Equal(t, "Second Value", string(v))
+	})
+	t.Run("Insert in middle", func(t *testing.T) {
+		lp := NewListPack(1024, []byte("First Value"), []byte("Second Value"), []byte("Fourth Value"))
+
+		err := lp.InsertAt(2, []byte("Third Value"))
+		assert.NoError(t, err)
+		v, _ := lp.AtIndex(0)
+		assert.Equal(t, "First Value", string(v))
+		v, _ = lp.AtIndex(1)
+		assert.Equal(t, "Second Value", string(v))
+		v, _ = lp.AtIndex(2)
+		assert.Equal(t, "Third Value", string(v))
+		v, _ = lp.AtIndex(3)
+		assert.Equal(t, "Fourth Value", string(v))
+	})
+	t.Run("Insert beyond length", func(t *testing.T) {
+		lp := NewListPack(1024, []byte("First Value"))
+
+		err := lp.InsertAt(2, []byte("Third Value"))
+		assert.NoError(t, err)
+
+		v, _ := lp.AtIndex(1)
+		assert.Equal(t, "Third Value", string(v))
+	})
+	t.Run("Insert in empty listpack", func(t *testing.T) {
+		lp := NewEmptyListPack(1024)
+
+		err := lp.InsertAt(0, []byte("Hello World"))
+		assert.NoError(t, err)
+
+		v, _ := lp.AtIndex(0)
+		assert.Equal(t, "Hello World", string(v))
+	})
+
+}

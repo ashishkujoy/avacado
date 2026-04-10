@@ -2,6 +2,7 @@ package listpack
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"sync"
 )
@@ -220,4 +221,48 @@ func (lp *ListPack) LRange(start, end int64) ([][]byte, error) {
 func (lp *ListPack) Traverse(cb func(interface{}) (bool, error)) error {
 	_, err := traverse(lp.data[6:], 0, cb)
 	return err
+}
+
+// InsertAt insert the given element at the given index.
+// negative index will result in error.
+// Any index greater than or equal to length of listpack will be clamped to listpack length
+func (lp *ListPack) InsertAt(i int, bytes []byte) error {
+	if i < 0 {
+		return errors.New("negative index not supported")
+	}
+	lp.mu.Lock()
+	defer lp.mu.Unlock()
+	oldSize := binary.BigEndian.Uint32(lp.data[:4])
+	oldEntryCount := binary.BigEndian.Uint16(lp.data[4:6])
+	if i > int(oldEntryCount) {
+		i = int(oldEntryCount)
+	}
+	byteIndex := 6
+	var err error
+	if i == int(oldEntryCount) {
+		byteIndex = int(oldSize) - 1
+	} else if i != 0 {
+		index := 0
+		byteIndex, err = traverse(lp.data, 6, func(element interface{}) (bool, error) {
+			index++
+			if index == i {
+				return false, nil
+			}
+			return true, nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+	size := encodedSize(bytes)
+	encoded := make([]byte, size)
+	_, err = encode(encoded, 0, bytes)
+	if err != nil {
+		return err
+	}
+	copy(lp.data[byteIndex+size:], lp.data[byteIndex:])
+	copy(lp.data[byteIndex:], encoded)
+	binary.BigEndian.PutUint32(lp.data[:4], oldSize+uint32(size))
+	binary.BigEndian.PutUint16(lp.data[4:6], oldEntryCount+1)
+	return nil
 }
