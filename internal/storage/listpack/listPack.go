@@ -181,6 +181,35 @@ func (lp *ListPack) AtIndex(i int) ([]byte, bool) {
 	return element, element != nil
 }
 
+// IndexOf finds the index of given candidate in the list pack
+// Optionally skips odd element if skipOdds is set true(used in ListPackBasedHSet)
+func (lp *ListPack) IndexOf(candidate string, skipOdds bool) (int, bool) {
+	index := 0
+	found := false
+	_, _ = traverse(lp.data, 6, func(elem interface{}) (bool, error) {
+		defer func() { index++ }()
+		if index%2 == 1 && skipOdds {
+			return true, nil
+		}
+		var currentElement string
+		switch elem.(type) {
+		case []byte:
+			currentElement = string(elem.([]byte))
+		case int:
+			currentElement = fmt.Sprintf("%d", elem.(int))
+		}
+		if currentElement == candidate {
+			found = true
+			return false, nil
+		}
+		return true, nil
+	})
+	if !found {
+		return -1, false
+	}
+	return index - 1, found
+}
+
 func IsLargerThanListPackSize(value []byte, maxListPackSize int) bool {
 	return encodedSize(value)+7 > maxListPackSize
 }

@@ -322,6 +322,33 @@ func TestListPack_ReplaceAt(t *testing.T) {
 	})
 }
 
+func TestListPack_IndexOf(t *testing.T) {
+	t.Run("find index of existing element without skipping odds", func(t *testing.T) {
+		lp := NewListPack(200, []byte("V1"), []byte("V2"), []byte("V2"), []byte("V3"))
+		index, found := lp.IndexOf("V2", false)
+		assert.True(t, found)
+		assert.Equal(t, 1, index)
+	})
+	t.Run("find index of existing element with skipping odds", func(t *testing.T) {
+		lp := NewListPack(200, []byte("V1"), []byte("V2"), []byte("V2"), []byte("V3"))
+		index, found := lp.IndexOf("V2", true)
+		assert.True(t, found)
+		assert.Equal(t, 2, index)
+	})
+	t.Run("find index of non existing element without skipping odds", func(t *testing.T) {
+		lp := NewListPack(200, []byte("V1"), []byte("V2"), []byte("V2"), []byte("V3"))
+		index, found := lp.IndexOf("V4", false)
+		assert.False(t, found)
+		assert.Equal(t, -1, index)
+	})
+	t.Run("find index of non existing element with skipping odds", func(t *testing.T) {
+		lp := NewListPack(200, []byte("V1"), []byte("V2"), []byte("V2"), []byte("V3"))
+		index, found := lp.IndexOf("V3", true)
+		assert.False(t, found)
+		assert.Equal(t, -1, index)
+	})
+}
+
 func assertContainsExactly(t *testing.T, expected []string, lp *ListPack) {
 	assert.Equal(t, len(expected), lp.Length(), "Unequal length")
 	for i, expectedElem := range expected {
