@@ -1,6 +1,7 @@
 package listpack
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -271,5 +272,60 @@ func TestListPack_InsertAt(t *testing.T) {
 		v, _ := lp.AtIndex(0)
 		assert.Equal(t, "Hello World", string(v))
 	})
+}
 
+func TestListPack_ReplaceAt(t *testing.T) {
+	t.Run("Replace equal size element", func(t *testing.T) {
+		lp := NewListPack(100, []byte("first"), []byte("second"), []byte("third"))
+
+		err := lp.ReplaceAt(1, []byte("SECOND"))
+		assert.NoError(t, err)
+		assertContainsExactly(t, []string{"first", "SECOND", "third"}, lp)
+
+		err = lp.ReplaceAt(0, []byte("FIRST"))
+		assert.NoError(t, err)
+		assertContainsExactly(t, []string{"FIRST", "SECOND", "third"}, lp)
+
+		err = lp.ReplaceAt(2, []byte("THIRD"))
+		assert.NoError(t, err)
+		assertContainsExactly(t, []string{"FIRST", "SECOND", "THIRD"}, lp)
+	})
+	t.Run("Replace with small size element", func(t *testing.T) {
+		lp := NewListPack(100, []byte("first"), []byte("second"), []byte("third"))
+
+		err := lp.ReplaceAt(1, []byte("SEC"))
+		assert.NoError(t, err)
+		assertContainsExactly(t, []string{"first", "SEC", "third"}, lp)
+
+		err = lp.ReplaceAt(0, []byte("FIR"))
+		assert.NoError(t, err)
+		assertContainsExactly(t, []string{"FIR", "SEC", "third"}, lp)
+
+		err = lp.ReplaceAt(2, []byte("THIR"))
+		assert.NoError(t, err)
+		assertContainsExactly(t, []string{"FIR", "SEC", "THIR"}, lp)
+	})
+	t.Run("Replace with large size element", func(t *testing.T) {
+		lp := NewListPack(100, []byte("fir"), []byte("SEC"), []byte("thi"))
+
+		err := lp.ReplaceAt(1, []byte("second"))
+		assert.NoError(t, err)
+		assertContainsExactly(t, []string{"fir", "second", "thi"}, lp)
+
+		err = lp.ReplaceAt(0, []byte("first"))
+		assert.NoError(t, err)
+		assertContainsExactly(t, []string{"first", "second", "thi"}, lp)
+
+		err = lp.ReplaceAt(2, []byte("third"))
+		assert.NoError(t, err)
+		assertContainsExactly(t, []string{"first", "second", "third"}, lp)
+	})
+}
+
+func assertContainsExactly(t *testing.T, expected []string, lp *ListPack) {
+	assert.Equal(t, len(expected), lp.Length(), "Unequal length")
+	for i, expectedElem := range expected {
+		actual, _ := lp.AtIndex(i)
+		assert.Equal(t, expectedElem, string(actual), fmt.Sprintf("Failed at index %d", i))
+	}
 }

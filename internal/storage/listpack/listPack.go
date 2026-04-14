@@ -266,3 +266,49 @@ func (lp *ListPack) InsertAt(i int, bytes []byte) error {
 	binary.BigEndian.PutUint16(lp.data[4:6], oldEntryCount+1)
 	return nil
 }
+
+func (lp *ListPack) ReplaceAt(i int, element []byte) error {
+	lp.mu.Lock()
+	defer lp.mu.Unlock()
+	start, end, err := getStartAndEndPositionOf(lp.data, i)
+	if err != nil {
+		return err
+	}
+	newSize := encodedSize(element)
+	oldSize := end - start + 1
+	switch {
+	case newSize == oldSize:
+		_, err = encode(lp.data, start, element)
+		return err
+	case newSize < oldSize:
+		return lp.replaceWithShrink(start, end, element)
+	default:
+		return lp.replaceWithGrow(start, end, newSize, element)
+	}
+}
+
+func (lp *ListPack) replaceWithShrink(start, end int, element []byte) error {
+	total := int(binary.BigEndian.Uint32(lp.data[:4]))
+	next, err := encode(lp.data, start, element)
+	if err != nil {
+		return err
+	}
+	// Shift tail left to close the gap left by the smaller replacement.
+	copy(lp.data[next:], lp.data[end+1:total])
+	binary.BigEndian.PutUint32(lp.data[:4], uint32(total-(end+1-next)))
+	return nil
+}
+
+func (lp *ListPack) replaceWithGrow(start, end, newSize int, element []byte) error {
+	total := int(binary.BigEndian.Uint32(lp.data[:4]))
+	oldSize := end - start + 1
+	diff := newSize - oldSize
+	if total+diff > lp.maxSize {
+		return errors.New("listpack overflow: not enough capacity to grow element")
+	}
+	// Shift tail right to make room, then encode the larger element in place.
+	copy(lp.data[start+newSize:], lp.data[end+1:total])
+	_, err := encode(lp.data, start, element)
+	binary.BigEndian.PutUint32(lp.data[:4], uint32(total+diff))
+	return err
+}

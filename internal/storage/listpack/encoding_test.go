@@ -486,16 +486,40 @@ func TestEncodedSize(t *testing.T) {
 	}
 }
 
-// decodeAt is a helper that resolves a backLen cursor to the decoded entry value.
-// cursor must point to the last byte of an entry's backLen field.
-func decodeAt(buf []byte, cursor int) (interface{}, error) {
-	entryLen, backLenSize, err := lpDecodeBackLen(buf, cursor)
-	if err != nil {
-		return nil, err
-	}
-	entryStart := cursor - backLenSize - int(entryLen) + 1
-	value, _, err := decode(buf, entryStart)
-	return value, err
+func TestEncoding_StartAndEndIndexOfElementAtGivenIndex(t *testing.T) {
+	t.Run("Positions for zero index for empty list pack", func(t *testing.T) {
+		lp := NewEmptyListPack(100)
+		_, _, err := getStartAndEndPositionOf(lp.data, 0)
+		assert.Error(t, err)
+	})
+
+	t.Run("Positions for zero index for non empty list pack", func(t *testing.T) {
+		lp := NewListPack(100, []byte("12"), []byte("Hello"))
+		start, end, err := getStartAndEndPositionOf(lp.data, 0)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 6, start)
+		assert.Equal(t, 7, end)
+	})
+
+	t.Run("Positions for mid element", func(t *testing.T) {
+		lp := NewListPack(100, []byte("12"), []byte("Hello"), []byte("World"))
+		start, end, err := getStartAndEndPositionOf(lp.data, 1)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 8, start)
+		assert.Equal(t, 14, end)
+	})
+
+	t.Run("Positions for last element", func(t *testing.T) {
+		lp := NewListPack(100, []byte("12"), []byte("Hello"), []byte("World"))
+		start, end, err := getStartAndEndPositionOf(lp.data, 2)
+
+		assert.NoError(t, err)
+		assert.Equal(t, 15, start)
+		assert.Equal(t, 21, end)
+	})
+
 }
 
 func newStringOfLength(n int) []byte {
