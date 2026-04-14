@@ -349,6 +349,67 @@ func TestListPack_IndexOf(t *testing.T) {
 	})
 }
 
+func TestListPack_PushAllOrNone(t *testing.T) {
+	t.Run("all entries fit, all are pushed", func(t *testing.T) {
+		lp := NewEmptyListPack(21)
+		count, err := lp.PushAllOrNone([]byte("hello"), []byte("hello"))
+		assert.NoError(t, err)
+		assert.Equal(t, 2, count)
+		assert.Equal(t, 2, lp.Length())
+		v, _ := lp.AtIndex(0)
+		assert.Equal(t, "hello", string(v))
+		v, _ = lp.AtIndex(1)
+		assert.Equal(t, "hello", string(v))
+	})
+
+	t.Run("not all entries fit, none are pushed (all-or-none)", func(t *testing.T) {
+		lp := NewEmptyListPack(21)
+		count, err := lp.PushAllOrNone([]byte("hello"), []byte("hello"), []byte("hello"))
+		assert.Error(t, err)
+		assert.Equal(t, -1, count)
+		assert.Equal(t, 0, lp.Length()) // nothing pushed
+	})
+
+	t.Run("single entry too large for empty listpack", func(t *testing.T) {
+		lp := NewEmptyListPack(10)
+		count, err := lp.PushAllOrNone([]byte("hello"))
+		assert.Error(t, err)
+		assert.Equal(t, -1, count)
+		assert.Equal(t, 0, lp.Length())
+	})
+
+	t.Run("listpack unchanged after failed push", func(t *testing.T) {
+		lp := NewEmptyListPack(21)
+		_, _ = lp.Push([]byte("hello"))
+
+		count, err := lp.PushAllOrNone([]byte("hello"), []byte("hello"))
+		assert.Error(t, err)
+		assert.Equal(t, -1, count)
+		assert.Equal(t, 1, lp.Length())
+		v, _ := lp.AtIndex(0)
+		assert.Equal(t, "hello", string(v))
+	})
+
+	t.Run("push into non-empty listpack succeeds when space is available", func(t *testing.T) {
+		lp := NewEmptyListPack(23)
+		_, _ = lp.Push([]byte("hi"))
+		_, _ = lp.Push([]byte("hi"))
+
+		count, err := lp.PushAllOrNone([]byte("hi"), []byte("hi"))
+		assert.NoError(t, err)
+		assert.Equal(t, 4, count)
+		assert.Equal(t, 4, lp.Length())
+	})
+
+	t.Run("empty entries slice pushes nothing and succeeds", func(t *testing.T) {
+		lp := NewEmptyListPack(64)
+		count, err := lp.PushAllOrNone()
+		assert.NoError(t, err)
+		assert.Equal(t, 0, count)
+		assert.Equal(t, 0, lp.Length())
+	})
+}
+
 func assertContainsExactly(t *testing.T, expected []string, lp *ListPack) {
 	assert.Equal(t, len(expected), lp.Length(), "Unequal length")
 	for i, expectedElem := range expected {

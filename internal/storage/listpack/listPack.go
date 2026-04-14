@@ -7,6 +7,8 @@ import (
 	"sync"
 )
 
+var listPackNotEnoughSizeError = errors.New("not enough space in lp")
+
 // ListPack represents a list pack data structure used for storing small lists in memory.
 type ListPack struct {
 	mu      sync.RWMutex
@@ -52,6 +54,10 @@ func (lp *ListPack) ByteSize() int {
 func (lp *ListPack) Push(value []byte) (int, error) {
 	lp.mu.Lock()
 	defer lp.mu.Unlock()
+	return lp._push(value)
+}
+
+func (lp *ListPack) _push(value []byte) (int, error) {
 	elemCount := int(binary.BigEndian.Uint16(lp.data[4:6]))
 
 	offset := int(binary.BigEndian.Uint32(lp.data[:4])) - 1
@@ -340,4 +346,26 @@ func (lp *ListPack) replaceWithGrow(start, end, newSize int, element []byte) err
 	_, err := encode(lp.data, start, element)
 	binary.BigEndian.PutUint32(lp.data[:4], uint32(total+diff))
 	return err
+}
+
+func (lp *ListPack) PushAllOrNone(entries ...[]byte) (int, error) {
+	lp.mu.Lock()
+	defer lp.mu.Unlock()
+	currentLpSize := int(binary.BigEndian.Uint32(lp.data[:4]))
+	size := 0
+	for _, entry := range entries {
+		size += encodedSize(entry)
+	}
+	if currentLpSize+size > lp.maxSize {
+		return -1, listPackNotEnoughSizeError
+	}
+	lastEntryCount := 0
+	for _, entry := range entries {
+		lastEntryCount, _ = lp._push(entry)
+	}
+	return lastEntryCount, nil
+}
+
+func (lp *ListPack) EncodedSize(entry []byte) int {
+	return encodedSize(entry)
 }

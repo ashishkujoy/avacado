@@ -7,6 +7,15 @@ import (
 )
 
 const defaultMaxListPackSize = 1024 * 8
+const maxEntryCount = 128
+const maxEntrySize = 64
+
+type encodingType = int
+
+const (
+	listpackEncoding encodingType = 0
+	hashEncoding     encodingType = 1
+)
 
 type HashSet interface {
 	Set(key string, value string)
@@ -15,30 +24,64 @@ type HashSet interface {
 }
 
 type ListPackBasedHashSet struct {
-	mu sync.RWMutex
-	lp *listpack.ListPack
+	mu       sync.RWMutex
+	lp       *listpack.ListPack
+	hash     map[string]string
+	encoding encodingType
+	size     int
 }
 
-func NewListPackBasedHashSet() *ListPackBasedHashSet {
+func NewHashSet() *ListPackBasedHashSet {
 	return &ListPackBasedHashSet{
-		mu: sync.RWMutex{},
-		lp: listpack.NewListPack(defaultMaxListPackSize),
+		mu:       sync.RWMutex{},
+		lp:       listpack.NewListPack(defaultMaxListPackSize),
+		encoding: listpackEncoding,
 	}
 }
 
 func (h *ListPackBasedHashSet) Set(key, value string) {
 	h.mu.Lock()
-	defer h.mu.Unlock()
+	defer func() {
+		h.size++
+		h.mu.Unlock()
+	}()
 
-	keyIndex, keyExists := h.lp.IndexOf(key, true)
-
-	if !keyExists {
-		_, _ = h.lp.Push([]byte(key))
-		_, _ = h.lp.Push([]byte(value))
-		return
+	if h.size == maxEntryCount && h.encoding != hashEncoding {
+		_ = h._migrateToHashMap()
 	}
 
-	_ = h.lp.ReplaceAt(keyIndex+1, []byte(value))
+	switch h.encoding {
+	case hashEncoding:
+		h.hash[key] = value
+	case listpackEncoding:
+		h.setInListPack(key, value)
+	}
+}
+
+func (h *ListPackBasedHashSet) setInListPack(key string, value string) {
+	keyIndex, keyExists := h.lp.IndexOf(key, true)
+	var insertionError error
+
+	if !keyExists {
+		if h.lp.EncodedSize([]byte(key)) > maxEntrySize || h.lp.EncodedSize([]byte(value)) > maxEntrySize {
+			_ = h._migrateToHashMap()
+			h.hash[key] = value
+			return
+		}
+		_, insertionError = h.lp.PushAllOrNone([]byte(key), []byte(value))
+	} else {
+		if h.lp.EncodedSize([]byte(value)) > maxEntrySize {
+			_ = h._migrateToHashMap()
+			h.hash[key] = value
+			return
+		}
+		insertionError = h.lp.ReplaceAt(keyIndex+1, []byte(value))
+	}
+
+	if insertionError != nil {
+		_ = h._migrateToHashMap()
+		h.hash[key] = value
+	}
 }
 
 func convertToString(value interface{}) string {
@@ -88,5 +131,25 @@ func (h *ListPackBasedHashSet) Size() int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
-	return h.lp.Length() / 2
+	return h.size
+}
+
+// _migrateToHashMap converts the underlying listPack to hashmap
+// it should be called after acquiring lp.mu
+// ideally it should be called from set methods only
+func (h *ListPackBasedHashSet) _migrateToHashMap() error {
+	length := h.lp.Length()
+	entries, err := h.lp.LRange(0, int64(length))
+	if err != nil {
+		return err
+	}
+
+	h.encoding = hashEncoding
+	h.hash = make(map[string]string)
+	for i := 0; i < length; i += 2 {
+		h.hash[string(entries[i])] = string(entries[i+1])
+	}
+
+	h.lp = nil
+	return nil
 }
