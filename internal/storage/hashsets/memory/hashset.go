@@ -30,8 +30,15 @@ func (h *ListPackBasedHashSet) Set(key, value string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	_, _ = h.lp.Push([]byte(key))
-	_, _ = h.lp.Push([]byte(value))
+	keyIndex, keyExists := h.lp.IndexOf(key, true)
+
+	if !keyExists {
+		_, _ = h.lp.Push([]byte(key))
+		_, _ = h.lp.Push([]byte(value))
+		return
+	}
+
+	_ = h.lp.ReplaceAt(keyIndex+1, []byte(value))
 }
 
 func convertToString(value interface{}) string {
