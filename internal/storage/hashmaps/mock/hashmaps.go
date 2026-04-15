@@ -40,6 +40,21 @@ func (m *MockHashMaps) EXPECT() *MockHashMapsMockRecorder {
 	return m.recorder
 }
 
+// HGet mocks base method.
+func (m *MockHashMaps) HGet(ctx context.Context, name, field string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HGet", ctx, name, field)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HGet indicates an expected call of HGet.
+func (mr *MockHashMapsMockRecorder) HGet(ctx, name, field any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HGet", reflect.TypeOf((*MockHashMaps)(nil).HGet), ctx, name, field)
+}
+
 // HSet mocks base method.
 func (m *MockHashMaps) HSet(ctx context.Context, name string, keyValues []string) int {
 	m.ctrl.T.Helper()

@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"fmt"
 	"sync"
 )
 
@@ -32,4 +33,20 @@ func (h *HashMaps) HSet(_ context.Context, name string, keyValues []string) int 
 		addedCount += hMap.Set(keyValues[i], keyValues[i+1])
 	}
 	return addedCount
+}
+
+// HGet return the specified field of the map
+func (h *HashMaps) HGet(_ context.Context, name, field string) ([]byte, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	hMap, found := h.maps[name]
+	if !found {
+		return nil, fmt.Errorf("%s does not exists", name)
+	}
+	value, valueFound := hMap.Get(field)
+	if !valueFound {
+		return nil, fmt.Errorf("%s field does not exists in %s map", field, name)
+	}
+	return value, nil
 }
