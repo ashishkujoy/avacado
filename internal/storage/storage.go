@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"avacado/internal/storage/hashmaps"
+	memhash "avacado/internal/storage/hashmaps/memory"
 	"avacado/internal/storage/kv"
 	"avacado/internal/storage/kv/memory"
 	"avacado/internal/storage/lists"
@@ -13,11 +15,13 @@ import (
 type Storage interface {
 	KV() kv.Store
 	Lists() lists.Lists
+	Maps() hashmaps.HashMaps
 }
 
 type DefaultStorage struct {
 	kv    *memory.KVMemoryStore
 	lists *memlist.ListMemoryStore
+	maps  *memhash.HashMaps
 }
 
 func (d DefaultStorage) KV() kv.Store {
@@ -26,6 +30,10 @@ func (d DefaultStorage) KV() kv.Store {
 
 func (d DefaultStorage) Lists() lists.Lists {
 	return d.lists
+}
+
+func (d DefaultStorage) Maps() hashmaps.HashMaps {
+	return d.maps
 }
 
 const defaultMaxListPackSize = 8192

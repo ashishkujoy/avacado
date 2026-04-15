@@ -10,6 +10,7 @@
 package mocksstorage
 
 import (
+	hashmaps "avacado/internal/storage/hashmaps"
 	kv "avacado/internal/storage/kv"
 	lists "avacado/internal/storage/lists"
 	reflect "reflect"
@@ -67,4 +68,18 @@ func (m *MockStorage) Lists() lists.Lists {
 func (mr *MockStorageMockRecorder) Lists() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lists", reflect.TypeOf((*MockStorage)(nil).Lists))
+}
+
+// Maps mocks base method.
+func (m *MockStorage) Maps() hashmaps.HashMaps {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Maps")
+	ret0, _ := ret[0].(hashmaps.HashMaps)
+	return ret0
+}
+
+// Maps indicates an expected call of Maps.
+func (mr *MockStorageMockRecorder) Maps() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Maps", reflect.TypeOf((*MockStorage)(nil).Maps))
 }

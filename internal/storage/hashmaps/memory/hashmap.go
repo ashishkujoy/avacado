@@ -22,7 +22,6 @@ type HashMap struct {
 	lp       *listpack.ListPack
 	hash     map[string]string
 	encoding encodingType
-	size     int
 }
 
 func NewHashMap() *HashMap {
@@ -33,11 +32,12 @@ func NewHashMap() *HashMap {
 	}
 }
 
-func (h *HashMap) Set(key, value string) {
+func (h *HashMap) Set(key, value string) int {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	existingSize := h.size()
 
-	if h.size >= maxEntryCount && h.encoding != hashEncoding {
+	if existingSize >= maxEntryCount && h.encoding != hashEncoding {
 		_ = h.migrateToHashMap()
 	}
 
@@ -48,7 +48,7 @@ func (h *HashMap) Set(key, value string) {
 		h.setInListPack(key, value)
 	}
 
-	h.size++
+	return h.size() - existingSize
 }
 
 func (h *HashMap) setInListPack(key, value string) {
@@ -123,7 +123,15 @@ func (h *HashMap) Size() int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
-	return h.size
+	return h.size()
+}
+
+func (h *HashMap) size() int {
+	if h.encoding == hashEncoding {
+		return len(h.hash)
+	}
+
+	return h.lp.Length() / 2
 }
 
 // migrateToHashMap converts the underlying listPack to a hashmap.

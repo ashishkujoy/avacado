@@ -4,6 +4,7 @@ import (
 	"avacado/internal/command"
 	"avacado/internal/command/connection"
 	"avacado/internal/command/connection/client"
+	"avacado/internal/command/hashmap"
 	"avacado/internal/command/kv"
 	"avacado/internal/command/kv/expiry"
 	"avacado/internal/command/list"
@@ -43,6 +44,8 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 	registry.Register(list.NewLIndexParser())
 	registry.Register(list.NewLRangeParser())
 	registry.Register(list.NewLMoveParser())
+
+	registry.Register(hashmap.NewHSetParser())
 
 	return registry
 }

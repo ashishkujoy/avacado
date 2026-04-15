@@ -18,7 +18,7 @@ func NewHashMaps() *HashMaps {
 }
 
 // HSet sets given fields to the specified map
-func (h *HashMaps) HSet(_ context.Context, name string, keyValues []string) {
+func (h *HashMaps) HSet(_ context.Context, name string, keyValues []string) int {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -27,7 +27,9 @@ func (h *HashMaps) HSet(_ context.Context, name string, keyValues []string) {
 		hMap = NewHashMap()
 		h.maps[name] = hMap
 	}
+	addedCount := 0
 	for i := 0; i < len(keyValues); i += 2 {
-		hMap.Set(keyValues[i], keyValues[i+1])
+		addedCount += hMap.Set(keyValues[i], keyValues[i+1])
 	}
+	return addedCount
 }
