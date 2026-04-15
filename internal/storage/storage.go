@@ -46,5 +46,6 @@ func NewDefaultStorage() DefaultStorage {
 	return DefaultStorage{
 		kv:    memory.NewKVMemoryStore(),
 		lists: memlist.NewListMemoryStore(maxListPackSize),
+		maps:  memhash.NewHashMaps(),
 	}
 }
