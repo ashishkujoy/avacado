@@ -55,6 +55,21 @@ func (mr *MockHashMapsMockRecorder) HGet(ctx, name, field any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HGet", reflect.TypeOf((*MockHashMaps)(nil).HGet), ctx, name, field)
 }
 
+// HGetAll mocks base method.
+func (m *MockHashMaps) HGetAll(ctx context.Context, name string) (map[string]string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HGetAll", ctx, name)
+	ret0, _ := ret[0].(map[string]string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HGetAll indicates an expected call of HGetAll.
+func (mr *MockHashMapsMockRecorder) HGetAll(ctx, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HGetAll", reflect.TypeOf((*MockHashMaps)(nil).HGetAll), ctx, name)
+}
+
 // HSet mocks base method.
 func (m *MockHashMaps) HSet(ctx context.Context, name string, keyValues []string) int {
 	m.ctrl.T.Helper()

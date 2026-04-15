@@ -94,6 +94,77 @@ func Test_SetValues(t *testing.T) {
 
 }
 
+func Test_GetAll(t *testing.T) {
+	t.Run("returns empty map when no entries - listpack encoding", func(t *testing.T) {
+		hs := NewHashMap()
+		result := hs.GetAll()
+		assert.NotNil(t, result)
+		assert.Empty(t, result)
+	})
+
+	t.Run("returns all key-value pairs - listpack encoding", func(t *testing.T) {
+		hs := NewHashMap()
+		hs.Set("Key1", "Value1")
+		hs.Set("Key2", "Value2")
+		hs.Set("Key3", "Value3")
+
+		assert.Nil(t, hs.hash)
+		assert.NotNil(t, hs.lp)
+
+		result := hs.GetAll()
+		assert.Equal(t, map[string]string{
+			"Key1": "Value1",
+			"Key2": "Value2",
+			"Key3": "Value3",
+		}, result)
+	})
+
+	t.Run("returns a copy, not the underlying storage - listpack encoding", func(t *testing.T) {
+		hs := NewHashMap()
+		hs.Set("Key1", "Value1")
+
+		result := hs.GetAll()
+		result["Key1"] = "Modified"
+		result["Key2"] = "New"
+
+		original := hs.GetAll()
+		assert.Equal(t, "Value1", original["Key1"])
+		_, exists := original["Key2"]
+		assert.False(t, exists)
+	})
+
+	t.Run("returns all key-value pairs after migration - hash encoding", func(t *testing.T) {
+		hs := NewHashMap()
+		for i := 0; i <= maxEntryCount; i++ {
+			hs.Set(fmt.Sprintf("%d", i), fmt.Sprintf("val%d", i))
+		}
+		assert.NotNil(t, hs.hash)
+		assert.Nil(t, hs.lp)
+
+		result := hs.GetAll()
+		assert.Len(t, result, maxEntryCount+1)
+		for i := 0; i <= maxEntryCount; i++ {
+			assert.Equal(t, fmt.Sprintf("val%d", i), result[fmt.Sprintf("%d", i)])
+		}
+	})
+
+	t.Run("returns a copy, not the underlying storage - hash encoding", func(t *testing.T) {
+		hs := NewHashMap()
+		for i := 0; i <= maxEntryCount; i++ {
+			hs.Set(fmt.Sprintf("%d", i), "value")
+		}
+		assert.NotNil(t, hs.hash)
+		assert.Nil(t, hs.lp)
+
+		result := hs.GetAll()
+		result["newKey"] = "newValue"
+
+		original := hs.GetAll()
+		_, exists := original["newKey"]
+		assert.False(t, exists)
+	})
+}
+
 func Test_GetValue(t *testing.T) {
 	hashSet := NewHashMap()
 	hashSet.Set("Key1", "Value1")

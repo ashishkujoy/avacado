@@ -50,3 +50,14 @@ func (h *HashMaps) HGet(_ context.Context, name, field string) ([]byte, error) {
 	}
 	return value, nil
 }
+
+func (h *HashMaps) HGetAll(_ context.Context, name string) (map[string]string, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	hMap, found := h.maps[name]
+	if !found {
+		return make(map[string]string), nil
+	}
+	return hMap.GetAll(), nil
+}

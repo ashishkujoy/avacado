@@ -119,6 +119,16 @@ func (h *HashMap) Get(key string) ([]byte, bool) {
 	return v, keyFound
 }
 
+func (h *HashMap) GetAll() map[string]string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.encoding == hashEncoding {
+		return copyHashMap(h.hash)
+	}
+	return toHashMap(h.lp)
+}
+
 func (h *HashMap) Size() int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
@@ -151,4 +161,21 @@ func (h *HashMap) migrateToHashMap() error {
 
 	h.lp = nil
 	return nil
+}
+
+func copyHashMap(source map[string]string) map[string]string {
+	destination := make(map[string]string)
+	for k, v := range source {
+		destination[k] = v
+	}
+	return destination
+}
+
+func toHashMap(source *listpack.ListPack) map[string]string {
+	entries, _ := source.LRange(0, int64(source.Length()))
+	destination := make(map[string]string)
+	for i := 0; i < len(entries); i += 2 {
+		destination[string(entries[i])] = string(entries[i+1])
+	}
+	return destination
 }
