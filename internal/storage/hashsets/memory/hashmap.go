@@ -17,13 +17,7 @@ const (
 	hashEncoding     encodingType = 1
 )
 
-type HashSet interface {
-	Set(key string, value string)
-	Get(key string) ([]byte, bool)
-	Size() int
-}
-
-type ListPackBasedHashSet struct {
+type HashMap struct {
 	mu       sync.RWMutex
 	lp       *listpack.ListPack
 	hash     map[string]string
@@ -31,15 +25,15 @@ type ListPackBasedHashSet struct {
 	size     int
 }
 
-func NewHashSet() *ListPackBasedHashSet {
-	return &ListPackBasedHashSet{
+func NewHashMap() *HashMap {
+	return &HashMap{
 		mu:       sync.RWMutex{},
 		lp:       listpack.NewListPack(defaultMaxListPackSize),
 		encoding: listpackEncoding,
 	}
 }
 
-func (h *ListPackBasedHashSet) Set(key, value string) {
+func (h *HashMap) Set(key, value string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -57,7 +51,7 @@ func (h *ListPackBasedHashSet) Set(key, value string) {
 	h.size++
 }
 
-func (h *ListPackBasedHashSet) setInListPack(key, value string) {
+func (h *HashMap) setInListPack(key, value string) {
 	keyIndex, keyExists := h.lp.IndexOf(key, true)
 
 	var needsMigration bool
@@ -104,7 +98,7 @@ func convertToBytes(value interface{}) []byte {
 	}
 }
 
-func (h *ListPackBasedHashSet) Get(key string) ([]byte, bool) {
+func (h *HashMap) Get(key string) ([]byte, bool) {
 	i := 0
 	var v []byte
 	keyFound := false
@@ -125,7 +119,7 @@ func (h *ListPackBasedHashSet) Get(key string) ([]byte, bool) {
 	return v, keyFound
 }
 
-func (h *ListPackBasedHashSet) Size() int {
+func (h *HashMap) Size() int {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 
@@ -134,7 +128,7 @@ func (h *ListPackBasedHashSet) Size() int {
 
 // migrateToHashMap converts the underlying listPack to a hashmap.
 // Must be called with h.mu held. Should only be called from set methods.
-func (h *ListPackBasedHashSet) migrateToHashMap() error {
+func (h *HashMap) migrateToHashMap() error {
 	length := h.lp.Length()
 	entries, err := h.lp.LRange(0, int64(length))
 	if err != nil {

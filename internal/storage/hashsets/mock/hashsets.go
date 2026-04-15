@@ -41,13 +41,13 @@ func (m *MockHashSets) EXPECT() *MockHashSetsMockRecorder {
 }
 
 // HSet mocks base method.
-func (m *MockHashSets) HSet(ctx context.Context, keyValues []string) {
+func (m *MockHashSets) HSet(ctx context.Context, name string, keyValues []string) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "HSet", ctx, keyValues)
+	m.ctrl.Call(m, "HSet", ctx, name, keyValues)
 }
 
 // HSet indicates an expected call of HSet.
-func (mr *MockHashSetsMockRecorder) HSet(ctx, keyValues any) *gomock.Call {
+func (mr *MockHashSetsMockRecorder) HSet(ctx, name, keyValues any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HSet", reflect.TypeOf((*MockHashSets)(nil).HSet), ctx, keyValues)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HSet", reflect.TypeOf((*MockHashSets)(nil).HSet), ctx, name, keyValues)
 }

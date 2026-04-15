@@ -10,7 +10,7 @@ import (
 
 func Test_SetValues(t *testing.T) {
 	t.Run("Set new value", func(t *testing.T) {
-		hashSet := NewHashSet()
+		hashSet := NewHashMap()
 		assert.Equal(t, 0, hashSet.lp.Length())
 
 		hashSet.Set("Key1", "Value1")
@@ -21,7 +21,7 @@ func Test_SetValues(t *testing.T) {
 	})
 
 	t.Run("Update existing value", func(t *testing.T) {
-		hashSet := NewHashSet()
+		hashSet := NewHashMap()
 
 		hashSet.Set("Key1", "Value1")
 		hashSet.Set("Key2", "Value2")
@@ -44,7 +44,7 @@ func Test_SetValues(t *testing.T) {
 	})
 
 	t.Run("migrate to hashmap when key count goes beyond threshold", func(t *testing.T) {
-		hs := NewHashSet()
+		hs := NewHashMap()
 		for i := 0; i < maxEntryCount; i++ {
 			hs.Set(fmt.Sprintf("%d", i), "hi")
 		}
@@ -57,7 +57,7 @@ func Test_SetValues(t *testing.T) {
 	})
 
 	t.Run("migrate to hashmap when key size exceed threshold", func(t *testing.T) {
-		hs := NewHashSet()
+		hs := NewHashMap()
 		hs.Set("AA", "Value1")
 		assert.Nil(t, hs.hash)
 		assert.NotNil(t, hs.lp)
@@ -69,7 +69,7 @@ func Test_SetValues(t *testing.T) {
 	})
 
 	t.Run("migrate to hashmap when value size exceed threshold", func(t *testing.T) {
-		hs := NewHashSet()
+		hs := NewHashMap()
 		hs.Set("AA", "Value1")
 		assert.Nil(t, hs.hash)
 		assert.NotNil(t, hs.lp)
@@ -81,7 +81,7 @@ func Test_SetValues(t *testing.T) {
 	})
 
 	t.Run("migrate to hashmap when value size exceed threshold for existing key", func(t *testing.T) {
-		hs := NewHashSet()
+		hs := NewHashMap()
 		hs.Set("AA", "Value1")
 		assert.Nil(t, hs.hash)
 		assert.NotNil(t, hs.lp)
@@ -95,7 +95,7 @@ func Test_SetValues(t *testing.T) {
 }
 
 func Test_GetValue(t *testing.T) {
-	hashSet := NewHashSet()
+	hashSet := NewHashMap()
 	hashSet.Set("Key1", "Value1")
 	hashSet.Set("Key2", "Value2")
 
