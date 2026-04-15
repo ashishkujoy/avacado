@@ -41,13 +41,10 @@ func NewHashSet() *ListPackBasedHashSet {
 
 func (h *ListPackBasedHashSet) Set(key, value string) {
 	h.mu.Lock()
-	defer func() {
-		h.size++
-		h.mu.Unlock()
-	}()
+	defer h.mu.Unlock()
 
-	if h.size == maxEntryCount && h.encoding != hashEncoding {
-		_ = h._migrateToHashMap()
+	if h.size >= maxEntryCount && h.encoding != hashEncoding {
+		_ = h.migrateToHashMap()
 	}
 
 	switch h.encoding {
@@ -56,30 +53,31 @@ func (h *ListPackBasedHashSet) Set(key, value string) {
 	case listpackEncoding:
 		h.setInListPack(key, value)
 	}
+
+	h.size++
 }
 
-func (h *ListPackBasedHashSet) setInListPack(key string, value string) {
+func (h *ListPackBasedHashSet) setInListPack(key, value string) {
 	keyIndex, keyExists := h.lp.IndexOf(key, true)
-	var insertionError error
 
+	var needsMigration bool
 	if !keyExists {
 		if h.lp.EncodedSize([]byte(key)) > maxEntrySize || h.lp.EncodedSize([]byte(value)) > maxEntrySize {
-			_ = h._migrateToHashMap()
-			h.hash[key] = value
-			return
+			needsMigration = true
+		} else {
+			_, err := h.lp.PushAllOrNone([]byte(key), []byte(value))
+			needsMigration = err != nil
 		}
-		_, insertionError = h.lp.PushAllOrNone([]byte(key), []byte(value))
 	} else {
 		if h.lp.EncodedSize([]byte(value)) > maxEntrySize {
-			_ = h._migrateToHashMap()
-			h.hash[key] = value
-			return
+			needsMigration = true
+		} else {
+			needsMigration = h.lp.ReplaceAt(keyIndex+1, []byte(value)) != nil
 		}
-		insertionError = h.lp.ReplaceAt(keyIndex+1, []byte(value))
 	}
 
-	if insertionError != nil {
-		_ = h._migrateToHashMap()
+	if needsMigration {
+		_ = h.migrateToHashMap()
 		h.hash[key] = value
 	}
 }
@@ -134,10 +132,9 @@ func (h *ListPackBasedHashSet) Size() int {
 	return h.size
 }
 
-// _migrateToHashMap converts the underlying listPack to hashmap
-// it should be called after acquiring lp.mu
-// ideally it should be called from set methods only
-func (h *ListPackBasedHashSet) _migrateToHashMap() error {
+// migrateToHashMap converts the underlying listPack to a hashmap.
+// Must be called with h.mu held. Should only be called from set methods.
+func (h *ListPackBasedHashSet) migrateToHashMap() error {
 	length := h.lp.Length()
 	entries, err := h.lp.LRange(0, int64(length))
 	if err != nil {
