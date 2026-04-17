@@ -131,7 +131,7 @@ func (lp *ListPack) LPop(count int) [][]byte {
 	count = min(count, length)
 	elements := make([][]byte, count)
 	index := 0
-	cursor, _ := traverse(lp.data[6:], 0, func(elem interface{}) (bool, error) {
+	cursor, _ := traverse(lp.data, func(elem interface{}, _, _, _ int) (bool, error) {
 		switch elem.(type) {
 		case []byte:
 			elements[index] = elem.([]byte)
@@ -145,8 +145,8 @@ func (lp *ListPack) LPop(count int) [][]byte {
 		return true, nil
 	})
 
-	copy(lp.data[6:], lp.data[6+cursor:byteSize])
-	newSize := byteSize - cursor
+	copy(lp.data[6:], lp.data[cursor:byteSize])
+	newSize := byteSize - cursor + 6
 	newLength := length - count
 	binary.BigEndian.PutUint32(lp.data[:4], uint32(newSize))
 	binary.BigEndian.PutUint16(lp.data[4:6], uint16(newLength))
@@ -171,7 +171,7 @@ func (lp *ListPack) AtIndex(i int) ([]byte, bool) {
 	}
 	r := 0
 	var element []byte
-	_, _ = traverse(lp.data[6:], 0, func(elem interface{}) (bool, error) {
+	_, _ = traverse(lp.data, func(elem interface{}, _, _, _ int) (bool, error) {
 		if r != i {
 			r++
 			return true, nil
@@ -192,7 +192,7 @@ func (lp *ListPack) AtIndex(i int) ([]byte, bool) {
 func (lp *ListPack) IndexOf(candidate string, skipOdds bool) (int, bool) {
 	index := 0
 	found := false
-	_, _ = traverse(lp.data, 6, func(elem interface{}) (bool, error) {
+	_, _ = traverse(lp.data, func(elem interface{}, _, _, _ int) (bool, error) {
 		defer func() { index++ }()
 		if index%2 == 1 && skipOdds {
 			return true, nil
@@ -228,10 +228,9 @@ func NewPlainListPack(element []byte) *ListPack {
 func (lp *ListPack) LRange(start, end int64) ([][]byte, error) {
 	lp.mu.Lock()
 	defer lp.mu.Unlock()
-	size := binary.BigEndian.Uint32(lp.data[:4]) - 1
 	index := int64(0)
 	var elements [][]byte
-	_, err := traverse(lp.data[6:size], 0, func(elem interface{}) (bool, error) {
+	_, err := traverse(lp.data, func(elem interface{}, _, _, _ int) (bool, error) {
 		if index < start {
 			index++
 			return true, nil
@@ -253,8 +252,8 @@ func (lp *ListPack) LRange(start, end int64) ([][]byte, error) {
 	return elements, err
 }
 
-func (lp *ListPack) Traverse(cb func(interface{}) (bool, error)) error {
-	_, err := traverse(lp.data[6:], 0, cb)
+func (lp *ListPack) Traverse(cb func(interface{}, int, int, int) (bool, error)) error {
+	_, err := traverse(lp.data, cb)
 	return err
 }
 
@@ -278,7 +277,7 @@ func (lp *ListPack) InsertAt(i int, bytes []byte) error {
 		byteIndex = int(oldSize) - 1
 	} else if i != 0 {
 		index := 0
-		byteIndex, err = traverse(lp.data, 6, func(element interface{}) (bool, error) {
+		byteIndex, err = traverse(lp.data, func(element interface{}, _, _, _ int) (bool, error) {
 			index++
 			if index == i {
 				return false, nil
@@ -368,4 +367,34 @@ func (lp *ListPack) PushAllOrNone(entries ...[]byte) (int, error) {
 
 func (lp *ListPack) EncodedSize(entry []byte) int {
 	return encodedSize(entry)
+}
+
+func (lp *ListPack) DeleteFromIndex(startingIndex int, count int) {
+	lp.mu.Lock()
+	defer lp.mu.Unlock()
+	bytesSize := int(binary.BigEndian.Uint32(lp.data[:4]))
+	size := int(binary.BigEndian.Uint16(lp.data[4:6]))
+	endIndex := startingIndex + count - 1
+	if endIndex >= size {
+		endIndex = size - 1
+	}
+	start := 0
+	end := 0
+
+	_, _ = traverse(lp.data, func(_ interface{}, index, startPosition, endPosition int) (bool, error) {
+		if index == startingIndex {
+			start = startPosition
+		}
+		if index == endIndex {
+			end = endPosition
+			return false, nil
+		}
+		return true, nil
+	})
+
+	copy(lp.data[start:], lp.data[end:bytesSize])
+	bytesSize = bytesSize - (end - start)
+	size = end - start
+	binary.BigEndian.PutUint32(lp.data[:4], uint32(bytesSize))
+	binary.BigEndian.PutUint16(lp.data[4:6], uint16(size))
 }

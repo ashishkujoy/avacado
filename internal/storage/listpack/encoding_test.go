@@ -1,6 +1,7 @@
 package listpack
 
 import (
+	"encoding/binary"
 	"errors"
 	"testing"
 
@@ -249,8 +250,8 @@ func TestEncoding_32BitString(t *testing.T) {
 
 func TestTraverse(t *testing.T) {
 	t.Run("Traverse mixed values", func(t *testing.T) {
-		buf := make([]byte, 256000)
-		offset1, err := encode(buf, 0, []byte("42"))
+		buf := make([]byte, 25600)
+		offset1, err := encode(buf, 6, []byte("42"))
 		assert.NoError(t, err)
 		offset2, err := encode(buf, offset1, []byte("190"))
 		assert.NoError(t, err)
@@ -267,11 +268,18 @@ func TestTraverse(t *testing.T) {
 		offset7, err := encode(buf, offset6, str32Bit)
 		assert.NoError(t, err)
 
+		binary.BigEndian.PutUint32(buf[:4], uint32(offset7))
+		binary.BigEndian.PutUint16(buf[4:6], 7)
+		buf[offset7] = endOfBuf
+
 		var got []interface{}
-		endOffset, err := traverse(buf[:offset7], 0, func(el interface{}) (bool, error) {
-			got = append(got, el)
-			return true, nil
-		})
+		endOffset, err := traverse(
+			buf,
+			func(el interface{}, _index, _start, _end int) (bool, error) {
+				got = append(got, el)
+				return true, nil
+			},
+		)
 		assert.NoError(t, err)
 		assert.Equal(t, offset7, endOffset)
 		expected := []interface{}{42, 190, -32768, 8388608, []byte("Hi"), str12Bit, str32Bit}
@@ -279,19 +287,24 @@ func TestTraverse(t *testing.T) {
 	})
 
 	t.Run("empty buffer", func(t *testing.T) {
+		buf := make([]byte, 10)
+		buf[6] = endOfBuf
 		var got []interface{}
-		endOffset, err := traverse([]byte{}, 0, func(el interface{}) (bool, error) {
-			got = append(got, el)
-			return true, nil
-		})
+		endOffset, err := traverse(
+			buf,
+			func(el interface{}, _index, _start, _end int) (bool, error) {
+				got = append(got, el)
+				return true, nil
+			},
+		)
 		assert.NoError(t, err)
-		assert.Equal(t, 0, endOffset)
+		assert.Equal(t, 6, endOffset)
 		assert.Empty(t, got)
 	})
 
 	t.Run("callback error stops traversal", func(t *testing.T) {
 		buf := make([]byte, 256)
-		offset1, err := encode(buf, 0, []byte("1"))
+		offset1, err := encode(buf, 6, []byte("1"))
 		assert.NoError(t, err)
 		offset2, err := encode(buf, offset1, []byte("2"))
 		assert.NoError(t, err)
@@ -300,17 +313,20 @@ func TestTraverse(t *testing.T) {
 
 		var got []interface{}
 		sentinel := errors.New("stop")
-		_, err = traverse(buf[:offset2], 0, func(el interface{}) (bool, error) {
-			got = append(got, el)
-			return true, sentinel
-		})
+		_, err = traverse(
+			buf[:offset2],
+			func(el interface{}, _index, _start, _end int) (bool, error) {
+				got = append(got, el)
+				return true, sentinel
+			},
+		)
 		assert.ErrorIs(t, err, sentinel)
 		assert.Len(t, got, 1)
 	})
 
 	t.Run("callback false stops traversal", func(t *testing.T) {
 		buf := make([]byte, 256)
-		offset1, err := encode(buf, 0, []byte("1"))
+		offset1, err := encode(buf, 6, []byte("1"))
 		assert.NoError(t, err)
 		offset2, err := encode(buf, offset1, []byte("2"))
 		assert.NoError(t, err)
@@ -318,10 +334,13 @@ func TestTraverse(t *testing.T) {
 		assert.NoError(t, err)
 
 		var got []interface{}
-		endOffset, err := traverse(buf[:offset2], 0, func(el interface{}) (bool, error) {
-			got = append(got, el)
-			return false, nil
-		})
+		endOffset, err := traverse(
+			buf[:offset2],
+			func(el interface{}, _index, _start, _end int) (bool, error) {
+				got = append(got, el)
+				return false, nil
+			},
+		)
 		assert.NoError(t, err)
 		assert.Equal(t, offset1, endOffset)
 		assert.Len(t, got, 1)

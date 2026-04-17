@@ -85,7 +85,7 @@ func verifyListContainsExactly(
 ) {
 	actualElements, err := store.LRange(context.Background(), key, 0, -1)
 	assert.NoError(t, err)
-	assert.Equal(t, len(elements), len(actualElements))
+	assert.Equal(t, len(elements), len(actualElements), "Length not equal")
 
 	for i, actualElement := range actualElements {
 		assert.Equal(t, elements[i], actualElement)

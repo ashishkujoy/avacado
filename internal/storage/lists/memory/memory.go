@@ -213,7 +213,7 @@ func (l *ListMemoryStore) LRange(ctx context.Context, key string, start, end int
 }
 
 func (l *ListMemoryStore) LMove(
-	ctx context.Context,
+	_ context.Context,
 	source, destination string,
 	sourceDirection, destinationDirection lists.Direction,
 ) ([]byte, error) {

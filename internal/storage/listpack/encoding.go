@@ -570,7 +570,12 @@ func encode32BitStr(buf []byte, offset int, s []byte) int {
 // fn returns (continue bool, error). Traversal stops when fn returns false, fn returns
 // an error, or the end of the buffer is reached.
 // Returns the offset at which traversal ended and any error.
-func traverse(buf []byte, offset int, fn func(element interface{}) (bool, error)) (int, error) {
+func traverse(
+	buf []byte,
+	fn func(element interface{}, index, startPosition, endPosition int) (bool, error),
+) (int, error) {
+	index := 0
+	offset := 6
 	for offset < len(buf) {
 		if buf[offset] == endOfBuf {
 			break
@@ -579,11 +584,12 @@ func traverse(buf []byte, offset int, fn func(element interface{}) (bool, error)
 		if err != nil {
 			return offset, err
 		}
-		cont, err := fn(value)
+		cont, err := fn(value, index, offset, newOffset-1)
 		if err != nil {
 			return offset, err
 		}
 		offset = newOffset
+		index++
 		if !cont {
 			break
 		}

@@ -51,6 +51,65 @@ func (h *HashMap) Set(key, value string) int {
 	return h.size() - existingSize
 }
 
+func (h *HashMap) Get(key string) ([]byte, bool) {
+	i := 0
+	var v []byte
+	keyFound := false
+	incrementI := func() { i++ }
+	_ = h.lp.Traverse(func(value interface{}, _, _, _ int) (bool, error) {
+		defer incrementI()
+		if i%2 == 0 {
+			k := convertToString(value)
+			keyFound = k == key
+			return true, nil
+		}
+		if keyFound {
+			v = convertToBytes(value)
+			return false, nil
+		}
+		return true, nil
+	})
+	return v, keyFound
+}
+
+func (h *HashMap) GetAll() map[string]string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	if h.encoding == hashEncoding {
+		return copyHashMap(h.hash)
+	}
+	return toHashMap(h.lp)
+}
+
+func (h *HashMap) Size() int {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	return h.size()
+}
+
+func (h *HashMap) Delete(fields []string) int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	currentSize := h.size()
+
+	if h.encoding == hashEncoding {
+		for _, key := range fields {
+			delete(h.hash, key)
+		}
+	} else {
+		for _, key := range fields {
+			keyIndex, keyPresent := h.lp.IndexOf(key, true)
+			if !keyPresent {
+				continue
+			}
+			h.lp.DeleteFromIndex(keyIndex, 2)
+		}
+	}
+	return currentSize - h.size()
+}
+
 func (h *HashMap) setInListPack(key, value string) {
 	keyIndex, keyExists := h.lp.IndexOf(key, true)
 
@@ -96,44 +155,6 @@ func convertToBytes(value interface{}) []byte {
 	default:
 		return nil
 	}
-}
-
-func (h *HashMap) Get(key string) ([]byte, bool) {
-	i := 0
-	var v []byte
-	keyFound := false
-	incrementI := func() { i++ }
-	_ = h.lp.Traverse(func(value interface{}) (bool, error) {
-		defer incrementI()
-		if i%2 == 0 {
-			k := convertToString(value)
-			keyFound = k == key
-			return true, nil
-		}
-		if keyFound {
-			v = convertToBytes(value)
-			return false, nil
-		}
-		return true, nil
-	})
-	return v, keyFound
-}
-
-func (h *HashMap) GetAll() map[string]string {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	if h.encoding == hashEncoding {
-		return copyHashMap(h.hash)
-	}
-	return toHashMap(h.lp)
-}
-
-func (h *HashMap) Size() int {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
-	return h.size()
 }
 
 func (h *HashMap) size() int {
