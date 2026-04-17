@@ -2,6 +2,7 @@ package server
 
 import (
 	"avacado/internal/command"
+	config "avacado/internal/config"
 	"avacado/internal/protocol"
 	"avacado/internal/storage"
 	"context"
@@ -36,7 +37,8 @@ type Connection interface {
 }
 
 func (s *Server) Serve(conn Connection, logger *slog.Logger) error {
-	ctx := context.Background()
+	clientConfig := config.DefaultClientConfig()
+	ctx := context.WithValue(context.Background(), "clientConfig", clientConfig)
 	defer func() {
 		logger.Info("closing connection")
 		conn.Close()

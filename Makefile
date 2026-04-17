@@ -1,3 +1,5 @@
+GOTEST := $(shell which gotest 2>/dev/null || echo go test)
+
 .PHONY: test mocks clean help
 
 help: ## Show this help message
@@ -15,7 +17,7 @@ test: mocks ## Generate mocks and run all tests
 	@echo ""
 	@echo "🧪 Running tests..."
 	@start_time=$$(date +%s); \
-	go test -v ./...; \
+	$(GOTEST) -v ./...; \
 	end_time=$$(date +%s); \
 	duration=$$((end_time - start_time)); \
 	echo ""; \

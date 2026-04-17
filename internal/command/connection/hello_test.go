@@ -1,6 +1,7 @@
 package connection
 
 import (
+	"avacado/internal/config"
 	"avacado/internal/protocol"
 	mocksstorage "avacado/internal/storage/mock"
 	"context"
@@ -12,8 +13,8 @@ import (
 
 func TestHelloCommand_Execute(t *testing.T) {
 	controller := gomock.NewController(t)
-	command := Hello{}
-	ctx := context.Background()
+	command := Hello{Proto: 3}
+	ctx := context.WithValue(context.Background(), "clientConfig", config.DefaultClientConfig())
 
 	storage := mocksstorage.NewMockStorage(controller)
 
