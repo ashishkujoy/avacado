@@ -392,9 +392,9 @@ func (lp *ListPack) DeleteFromIndex(startingIndex int, count int) {
 		return true, nil
 	})
 
-	copy(lp.data[start:], lp.data[end:bytesSize])
+	copy(lp.data[start:], lp.data[end+1:bytesSize])
 	bytesSize = bytesSize - (end - start)
-	size = end - start
+	removedCount := endIndex - startingIndex + 1
 	binary.BigEndian.PutUint32(lp.data[:4], uint32(bytesSize))
-	binary.BigEndian.PutUint16(lp.data[4:6], uint16(size))
+	binary.BigEndian.PutUint16(lp.data[4:6], uint16(size-removedCount))
 }

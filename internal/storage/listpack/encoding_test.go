@@ -345,6 +345,39 @@ func TestTraverse(t *testing.T) {
 		assert.Equal(t, offset1, endOffset)
 		assert.Len(t, got, 1)
 	})
+
+	t.Run("Traverse should pass correct start and end offset", func(t *testing.T) {
+		buf := make([]byte, 40)
+		offset, _ := encode(buf, 6, []byte("Hi"))
+		offset, _ = encode(buf, offset, []byte("Hello"))
+		buf[offset] = endOfBuf
+		type traversed struct {
+			Index int
+			Start int
+			End   int
+		}
+		var got []traversed
+
+		_, _ = traverse(buf, func(_ interface{}, index, startPosition, endPosition int) (bool, error) {
+			got = append(got, traversed{
+				Index: index,
+				Start: startPosition,
+				End:   endPosition,
+			})
+			return true, nil
+		})
+		assert.Equal(t, 2, len(got))
+		assert.Equal(t, traversed{
+			Index: 0,
+			Start: 6,
+			End:   9,
+		}, got[0])
+		assert.Equal(t, traversed{
+			Index: 1,
+			Start: 10,
+			End:   16,
+		}, got[1])
+	})
 }
 
 func TestTraverseReverse(t *testing.T) {

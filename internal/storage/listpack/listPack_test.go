@@ -411,9 +411,51 @@ func TestListPack_PushAllOrNone(t *testing.T) {
 }
 
 func TestListPack_DeleteFromIndex(t *testing.T) {
-	//lp := NewListPack(1024, []byte("Hello"), []byte("World"), []byte("First"), []byte("Second"))
-	//lp.DeleteFromIndex(1, 1)
-	//assertContainsExactly(t, []string{"Hello", "First", "Second"}, lp)
+	t.Run("delete single element from mid", func(t *testing.T) {
+		lp := NewListPack(
+			1024,
+			[]byte("Hello"), []byte("World"), []byte("First"), []byte("Second"),
+		)
+		lp.DeleteFromIndex(1, 1)
+		assertContainsExactly(t, []string{"Hello", "First", "Second"}, lp)
+	})
+
+	t.Run("delete multiple element from mid", func(t *testing.T) {
+		lp := NewListPack(
+			1024,
+			[]byte("Hello"), []byte("World"), []byte("First"), []byte("Second"),
+		)
+		lp.DeleteFromIndex(1, 2)
+		assertContainsExactly(t, []string{"Hello", "Second"}, lp)
+	})
+
+	t.Run("delete till end from mid", func(t *testing.T) {
+		lp := NewListPack(
+			1024,
+			[]byte("Hello"), []byte("World"), []byte("First"), []byte("Second"),
+		)
+		lp.DeleteFromIndex(1, 3)
+		assertContainsExactly(t, []string{"Hello"}, lp)
+	})
+
+	t.Run("delete beyond end from mid", func(t *testing.T) {
+		lp := NewListPack(
+			1024,
+			[]byte("Hello"), []byte("World"), []byte("First"), []byte("Second"),
+		)
+		lp.DeleteFromIndex(1, 30)
+		assertContainsExactly(t, []string{"Hello"}, lp)
+	})
+
+	t.Run("delete few element from  start", func(t *testing.T) {
+		lp := NewListPack(
+			1024,
+			[]byte("Hello"), []byte("World"), []byte("First"), []byte("Second"),
+		)
+		lp.DeleteFromIndex(0, 2)
+		assertContainsExactly(t, []string{"First", "Second"}, lp)
+	})
+
 }
 
 func assertContainsExactly(t *testing.T, expected []string, lp *ListPack) {

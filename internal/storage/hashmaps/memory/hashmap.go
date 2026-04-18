@@ -52,6 +52,17 @@ func (h *HashMap) Set(key, value string) int {
 }
 
 func (h *HashMap) Get(key string) ([]byte, bool) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	if h.encoding == hashEncoding {
+		v, ok := h.hash[key]
+		if !ok {
+			return nil, false
+		}
+		return []byte(v), true
+	}
+
 	i := 0
 	var v []byte
 	keyFound := false
