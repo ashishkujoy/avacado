@@ -30,15 +30,7 @@ func NewExistsParser() *ExistsParser {
 }
 
 func (e *ExistsParser) Parse(msg *protocol.Message) (command.Command, error) {
-	keys := make([]string, 0, len(msg.Args))
-	for _, arg := range msg.Args {
-		key, err := arg.AsString()
-		if err != nil {
-			return nil, err
-		}
-		keys = append(keys, key)
-	}
-	return &Exists{Keys: keys}, nil
+	return &Exists{Keys: msg.Args}, nil
 }
 
 func (e *ExistsParser) Name() string {

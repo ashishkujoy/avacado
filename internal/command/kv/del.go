@@ -30,15 +30,7 @@ func NewDelParser() *DelParser {
 }
 
 func (d *DelParser) Parse(msg *protocol.Message) (command.Command, error) {
-	keys := make([]string, 0, len(msg.Args))
-	for _, arg := range msg.Args {
-		key, err := arg.AsString()
-		if err != nil {
-			return nil, err
-		}
-		keys = append(keys, key)
-	}
-	return &Del{Keys: keys}, nil
+	return &Del{Keys: msg.Args}, nil
 }
 
 func (d *DelParser) Name() string {

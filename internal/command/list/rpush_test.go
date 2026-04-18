@@ -47,11 +47,7 @@ func TestRPushParser_Parse(t *testing.T) {
 	parser := RPushParser{}
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "RPUSH",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("mylist")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("val1")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("val2")},
-		},
+		Args:    []string{"mylist", "val1", "val2"},
 	})
 	assert.NoError(t, err)
 	rpush := cmd.(*RPush)
@@ -63,7 +59,7 @@ func TestRPushParser_ParseNoArgs(t *testing.T) {
 	parser := RPushParser{}
 	_, err := parser.Parse(&protocol.Message{
 		Command: "RPUSH",
-		Args:    []protocol.Value{},
+		Args:    []string{},
 	})
 	assert.Error(t, err)
 }
@@ -72,9 +68,7 @@ func TestRPushParser_ParseOnlyKey(t *testing.T) {
 	parser := RPushParser{}
 	_, err := parser.Parse(&protocol.Message{
 		Command: "RPUSH",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("mylist")},
-		},
+		Args:    []string{"mylist"},
 	})
 	assert.Error(t, err)
 }

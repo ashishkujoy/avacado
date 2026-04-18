@@ -14,9 +14,7 @@ func TestDelParser_ParseSingleKey(t *testing.T) {
 	d := &DelParser{}
 	cmd, err := d.Parse(&protocol.Message{
 		Command: "DEL",
-		Args: []protocol.Value{
-			protocol.NewStringProtocolValue("key1"),
-		},
+		Args:    []string{"key1"},
 	})
 	assert.NoError(t, err)
 	delCmd := cmd.(*Del)
@@ -27,11 +25,7 @@ func TestDelParser_ParseMultipleKeys(t *testing.T) {
 	d := &DelParser{}
 	cmd, err := d.Parse(&protocol.Message{
 		Command: "DEL",
-		Args: []protocol.Value{
-			protocol.NewStringProtocolValue("key1"),
-			protocol.NewStringProtocolValue("key2"),
-			protocol.NewStringProtocolValue("key3"),
-		},
+		Args:    []string{"key1", "key2", "key3"},
 	})
 	assert.NoError(t, err)
 	delCmd := cmd.(*Del)

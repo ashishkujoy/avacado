@@ -117,7 +117,7 @@ func NewNullMapProtocolValue() Value {
 // Message represents a protocol message, containing command name and args
 type Message struct {
 	Command string
-	Args    []Value
+	Args    []string
 }
 
 // Response represents a protocol response

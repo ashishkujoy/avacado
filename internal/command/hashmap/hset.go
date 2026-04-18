@@ -28,22 +28,7 @@ func (p *HSetParser) Parse(msg *protocol.Message) (command.Command, error) {
 	if len(msg.Args)%2 != 1 {
 		return nil, command.NewInvalidArgumentsCount(p.Name(), len(msg.Args)+1, len(msg.Args))
 	}
-
-	name, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError(name, "name")
-	}
-
-	keyValues := make([]string, len(msg.Args)-1)
-	for i := 0; i < len(msg.Args)-1; i++ {
-		entry, err := msg.Args[i+1].AsString()
-		if err != nil {
-			return nil, command.NewInvalidTypeError(p.Name(), "field-value")
-		}
-		keyValues[i] = entry
-	}
-
-	return &HSet{name: name, keyValues: keyValues}, nil
+	return &HSet{name: msg.Args[0], keyValues: msg.Args[1:]}, nil
 }
 
 func (p *HSetParser) Name() string {

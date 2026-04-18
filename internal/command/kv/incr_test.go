@@ -14,9 +14,7 @@ func TestIncrParser_Parse(t *testing.T) {
 	i := &IncrParser{}
 	_, err := i.Parse(&protocol.Message{
 		Command: "INCR",
-		Args: []protocol.Value{
-			protocol.NewStringProtocolValue("key"),
-		},
+		Args:    []string{"key"},
 	})
 	assert.NoError(t, err)
 }

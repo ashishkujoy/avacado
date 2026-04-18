@@ -64,9 +64,7 @@ func TestPTTLParser_ParseAValidCommand(t *testing.T) {
 	parser := PTTLParser{}
 	msg := &protocol.Message{
 		Command: "pttl",
-		Args: []protocol.Value{
-			protocol.NewStringProtocolValue("key"),
-		},
+		Args:    []string{"key"},
 	}
 	cmd, err := parser.Parse(msg)
 	assert.NoError(t, err)
@@ -77,19 +75,7 @@ func TestPTTLParser_ParseHandleErrorForMissingKey(t *testing.T) {
 	parser := PTTLParser{}
 	msg := &protocol.Message{
 		Command: "pttl",
-		Args:    []protocol.Value{},
-	}
-	_, err := parser.Parse(msg)
-	assert.Error(t, err)
-}
-
-func TestPTTLParser_ParseHandleErrorForIncorrectKeyDataType(t *testing.T) {
-	parser := PTTLParser{}
-	msg := &protocol.Message{
-		Command: "pttl",
-		Args: []protocol.Value{
-			protocol.NewNumberProtocolValue(45),
-		},
+		Args:    []string{},
 	}
 	_, err := parser.Parse(msg)
 	assert.Error(t, err)

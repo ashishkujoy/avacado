@@ -63,12 +63,7 @@ func TestLLenParser_Parse(t *testing.T) {
 	parser := NewLLenParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "LLEN",
-		Args: []protocol.Value{
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("mylist"),
-			},
-		},
+		Args:    []string{"mylist"},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "mylist", cmd.(*LLen).Key)
@@ -78,7 +73,7 @@ func TestLLenParser_ParseNoArgs(t *testing.T) {
 	parser := NewLLenParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "LLEN",
-		Args:    []protocol.Value{},
+		Args:    []string{},
 	})
 	assert.Error(t, err)
 }
@@ -87,10 +82,7 @@ func TestLLenParser_ParseTooManyArgs(t *testing.T) {
 	parser := NewLLenParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "LLEN",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("key1")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("key2")},
-		},
+		Args:    []string{"key1", "key2"},
 	})
 	assert.Error(t, err)
 }

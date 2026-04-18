@@ -36,11 +36,7 @@ func (t *TTLParser) Parse(msg *protocol.Message) (command.Command, error) {
 	if len(msg.Args) != 1 {
 		return nil, command.NewInvalidArgumentsCount(t.Name(), 1, len(msg.Args))
 	}
-	key, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError(t.Name(), "key")
-	}
-	return &TTL{Key: key}, nil
+	return &TTL{Key: msg.Args[0]}, nil
 }
 
 func (t *TTLParser) Name() string {

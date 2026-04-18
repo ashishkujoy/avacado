@@ -5,7 +5,6 @@ import (
 	"avacado/internal/protocol"
 	"avacado/internal/storage"
 	"context"
-	"fmt"
 )
 
 type Get struct {
@@ -28,11 +27,7 @@ func NewGetParser() GetParser {
 }
 
 func (s GetParser) Parse(msg *protocol.Message) (command.Command, error) {
-	key, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, fmt.Errorf("get command failed to parse key: %w", err)
-	}
-	return &Get{key: key}, nil
+	return &Get{key: msg.Args[0]}, nil
 }
 
 func (s GetParser) Name() string {

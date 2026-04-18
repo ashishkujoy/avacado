@@ -31,11 +31,7 @@ func NewDecrParser() *DecrParser {
 }
 
 func (d *DecrParser) Parse(msg *protocol.Message) (command.Command, error) {
-	key, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, err
-	}
-	return &Decr{Key: key}, nil
+	return &Decr{Key: msg.Args[0]}, nil
 }
 
 func (d *DecrParser) Name() string {

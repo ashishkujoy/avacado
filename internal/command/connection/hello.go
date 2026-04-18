@@ -42,11 +42,7 @@ func NewHelloParser() *HelloParser {
 func (h *HelloParser) Parse(msg *protocol.Message) (command.Command, error) {
 	proto := 2
 	if len(msg.Args) > 0 {
-		protoStr, err := msg.Args[0].AsString()
-		if err != nil {
-			return nil, command.NewInvalidTypeError(h.Name(), "Proto")
-		}
-		p, err := strconv.Atoi(protoStr)
+		p, err := strconv.Atoi(msg.Args[0])
 		if err != nil {
 			return nil, command.NewInvalidTypeError(h.Name(), "Proto")
 		}

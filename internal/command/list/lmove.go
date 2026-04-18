@@ -38,24 +38,8 @@ func (l *LMoveParser) Parse(msg *protocol.Message) (command.Command, error) {
 	if len(msg.Args) != 4 {
 		return nil, command.NewInvalidArgumentsCount(l.Name(), 4, len(msg.Args))
 	}
-	source, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError(l.Name(), "source")
-	}
-	destination, err := msg.Args[1].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError(l.Name(), "destination")
-	}
-	srcDir, err := msg.Args[2].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError(l.Name(), "wherefrom")
-	}
-	dstDir, err := msg.Args[3].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError(l.Name(), "whereto")
-	}
-	srcDir = strings.ToLower(srcDir)
-	dstDir = strings.ToLower(dstDir)
+	srcDir := strings.ToLower(msg.Args[2])
+	dstDir := strings.ToLower(msg.Args[3])
 	if srcDir != lists.Left && srcDir != lists.Right {
 		return nil, fmt.Errorf("ERR syntax error")
 	}
@@ -63,8 +47,8 @@ func (l *LMoveParser) Parse(msg *protocol.Message) (command.Command, error) {
 		return nil, fmt.Errorf("ERR syntax error")
 	}
 	return &LMove{
-		Source:               source,
-		Destination:          destination,
+		Source:               msg.Args[0],
+		Destination:          msg.Args[1],
 		SourceDirection:      srcDir,
 		DestinationDirection: dstDir,
 	}, nil

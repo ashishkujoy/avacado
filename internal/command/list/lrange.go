@@ -5,6 +5,7 @@ import (
 	"avacado/internal/protocol"
 	"avacado/internal/storage"
 	"context"
+	"strconv"
 )
 
 type LRange struct {
@@ -32,23 +33,15 @@ func (l *LRangeParser) Parse(msg *protocol.Message) (command.Command, error) {
 	if len(msg.Args) != 3 {
 		return nil, command.NewInvalidArgumentsCount(l.Name(), 2, len(msg.Args))
 	}
-	key, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError(l.Name(), "key")
-	}
-	start, err := msg.Args[1].AsInt64()
+	start, err := strconv.ParseInt(msg.Args[1], 10, 64)
 	if err != nil {
 		return nil, command.NewInvalidTypeError(l.Name(), "start")
 	}
-	end, err := msg.Args[2].AsInt64()
+	end, err := strconv.ParseInt(msg.Args[2], 10, 64)
 	if err != nil {
 		return nil, command.NewInvalidTypeError(l.Name(), "end")
 	}
-	return &LRange{
-		Key:   key,
-		Start: start,
-		End:   end,
-	}, nil
+	return &LRange{Key: msg.Args[0], Start: start, End: end}, nil
 }
 
 func (l *LRangeParser) Name() string {

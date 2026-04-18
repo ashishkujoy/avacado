@@ -30,11 +30,7 @@ func (l *LLenParser) Parse(msg *protocol.Message) (command.Command, error) {
 	if len(msg.Args) != 1 {
 		return nil, command.NewInvalidArgumentsCount("llen", 1, len(msg.Args))
 	}
-	key, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError("llen", "key")
-	}
-	return &LLen{Key: key}, nil
+	return &LLen{Key: msg.Args[0]}, nil
 }
 
 func (l *LLenParser) Name() string {

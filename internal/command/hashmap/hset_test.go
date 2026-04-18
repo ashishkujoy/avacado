@@ -41,11 +41,7 @@ func TestHSetParser_Parse(t *testing.T) {
 	parser := NewHSetParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "HSET",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("myhash")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("field1")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("value1")},
-		},
+		Args:    []string{"myhash", "field1", "value1"},
 	})
 	assert.NoError(t, err)
 	hset := cmd.(*HSet)
@@ -57,13 +53,7 @@ func TestHSetParser_ParseMultipleFields(t *testing.T) {
 	parser := NewHSetParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "HSET",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("myhash")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("field1")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("value1")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("field2")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("value2")},
-		},
+		Args:    []string{"myhash", "field1", "value1", "field2", "value2"},
 	})
 	assert.NoError(t, err)
 	hset := cmd.(*HSet)
@@ -75,7 +65,7 @@ func TestHSetParser_ParseTooFewArgs(t *testing.T) {
 	parser := NewHSetParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "HSET",
-		Args:    []protocol.Value{},
+		Args:    []string{},
 	})
 	assert.Error(t, err)
 }
@@ -84,10 +74,7 @@ func TestHSetParser_ParseMissingValue(t *testing.T) {
 	parser := NewHSetParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "HSET",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("myhash")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("field1")},
-		},
+		Args:    []string{"myhash", "field1"},
 	})
 	assert.Error(t, err)
 }

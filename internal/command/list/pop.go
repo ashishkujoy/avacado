@@ -5,6 +5,7 @@ import (
 	"avacado/internal/protocol"
 	"avacado/internal/storage"
 	"context"
+	"strconv"
 )
 
 type PopDirection int
@@ -49,21 +50,17 @@ func parsePop(name string, direction PopDirection, msg *protocol.Message) (comma
 	if len(msg.Args) < 1 || len(msg.Args) > 2 {
 		return nil, command.NewInvalidArgumentsCount(name, 1, len(msg.Args))
 	}
-	key, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError(name, "key")
-	}
 	count := 1
 	hasCount := false
 	if len(msg.Args) == 2 {
-		c, err := msg.Args[1].AsInt64()
+		c, err := strconv.ParseInt(msg.Args[1], 10, 64)
 		if err != nil {
 			return nil, command.NewInvalidTypeError(name, "count")
 		}
 		count = int(c)
 		hasCount = true
 	}
-	return &Pop{Key: key, Count: count, HasCount: hasCount, Direction: direction}, nil
+	return &Pop{Key: msg.Args[0], Count: count, HasCount: hasCount, Direction: direction}, nil
 }
 
 type LPopParser struct{}

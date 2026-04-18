@@ -17,12 +17,7 @@ func TestLMoveParser_Parse(t *testing.T) {
 	parser := NewLMoveParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "LMOVE",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("src")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("dst")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("LEFT")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("RIGHT")},
-		},
+		Args:    []string{"src", "dst", "LEFT", "RIGHT"},
 	})
 	assert.NoError(t, err)
 	lmove := cmd.(*LMove)
@@ -36,12 +31,7 @@ func TestLMoveParser_ParseCaseInsensitive(t *testing.T) {
 	parser := NewLMoveParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "LMOVE",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("src")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("dst")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("right")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("left")},
-		},
+		Args:    []string{"src", "dst", "right", "left"},
 	})
 	assert.NoError(t, err)
 	lmove := cmd.(*LMove)
@@ -53,9 +43,7 @@ func TestLMoveParser_ParseInvalidArgCount(t *testing.T) {
 	parser := NewLMoveParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "LMOVE",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("src")},
-		},
+		Args:    []string{"src"},
 	})
 	assert.Error(t, err)
 }
@@ -64,12 +52,7 @@ func TestLMoveParser_ParseInvalidDirection(t *testing.T) {
 	parser := NewLMoveParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "LMOVE",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("src")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("dst")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("INVALID")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("LEFT")},
-		},
+		Args:    []string{"src", "dst", "INVALID", "LEFT"},
 	})
 	assert.Error(t, err)
 }
@@ -78,12 +61,7 @@ func TestLMoveParser_ParseInvalidDestinationDirection(t *testing.T) {
 	parser := NewLMoveParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "LMOVE",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("src")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("dst")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("LEFT")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("UP")},
-		},
+		Args:    []string{"src", "dst", "LEFT", "UP"},
 	})
 	assert.Error(t, err)
 }

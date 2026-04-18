@@ -27,19 +27,7 @@ func (h *HDelParser) Parse(msg *protocol.Message) (command.Command, error) {
 	if len(msg.Args) < 2 {
 		return nil, command.NewInvalidArgumentsCount(h.Name(), 2, len(msg.Args))
 	}
-	key, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError(h.Name(), "key")
-	}
-	var fields []string
-	for _, arg := range msg.Args[1:] {
-		field, err := arg.AsString()
-		if err != nil {
-			return nil, command.NewInvalidTypeError(h.Name(), "field")
-		}
-		fields = append(fields, field)
-	}
-	return &HDel{key: key, fields: fields}, nil
+	return &HDel{key: msg.Args[0], fields: msg.Args[1:]}, nil
 }
 
 func (h *HDelParser) Name() string {

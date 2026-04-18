@@ -20,11 +20,8 @@ func TestHelloCommand_Execute(t *testing.T) {
 
 	response := command.Execute(ctx, storage)
 
-	// Verify response is not nil and has no error
 	assert.NotNil(t, response)
 	assert.Nil(t, response.Err)
-
-	// Verify response is a map
 	assert.True(t, response.Value.IsMap())
 	assert.False(t, response.Value.Null)
 }
@@ -33,7 +30,7 @@ func TestHelloParser_Parse(t *testing.T) {
 	parser := NewHelloParser()
 	msg := &protocol.Message{
 		Command: "HELLO",
-		Args:    []protocol.Value{},
+		Args:    []string{},
 	}
 
 	command, err := parser.Parse(msg)
@@ -47,15 +44,9 @@ func TestHelloParser_ParseWithArgs(t *testing.T) {
 	parser := NewHelloParser()
 	msg := &protocol.Message{
 		Command: "HELLO",
-		Args: []protocol.Value{
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("3"),
-			},
-		},
+		Args:    []string{"3"},
 	}
 
-	// The parser currently ignores arguments, should still succeed
 	command, err := parser.Parse(msg)
 
 	assert.NoError(t, err)

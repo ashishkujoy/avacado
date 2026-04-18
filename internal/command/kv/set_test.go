@@ -16,16 +16,7 @@ import (
 func TestSetParser_Parse(t *testing.T) {
 	msg := &protocol.Message{
 		Command: "SET",
-		Args: []protocol.Value{
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("key"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("value"),
-			},
-		},
+		Args:    []string{"key", "value"},
 	}
 	parser := NewSetParser()
 	command, err := parser.Parse(msg)
@@ -37,20 +28,7 @@ func TestSetParser_Parse(t *testing.T) {
 func TestSetParser_WithNXOption(t *testing.T) {
 	msg := &protocol.Message{
 		Command: "SET",
-		Args: []protocol.Value{
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("key"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("value"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("NX"),
-			},
-		},
+		Args:    []string{"key", "value", "NX"},
 	}
 	parser := NewSetParser()
 	command, err := parser.Parse(msg)
@@ -63,20 +41,7 @@ func TestSetParser_WithNXOption(t *testing.T) {
 func TestSetParser_WithXXOption(t *testing.T) {
 	msg := &protocol.Message{
 		Command: "SET",
-		Args: []protocol.Value{
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("key"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("value"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("XX"),
-			},
-		},
+		Args:    []string{"key", "value", "XX"},
 	}
 	parser := NewSetParser()
 	command, err := parser.Parse(msg)
@@ -89,24 +54,7 @@ func TestSetParser_WithXXOption(t *testing.T) {
 func TestSetParser_WithEXOption(t *testing.T) {
 	msg := &protocol.Message{
 		Command: "SET",
-		Args: []protocol.Value{
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("key"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("value"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("EX"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("60"),
-			},
-		},
+		Args:    []string{"key", "value", "EX", "60"},
 	}
 	parser := NewSetParser()
 	command, err := parser.Parse(msg)
@@ -119,20 +67,7 @@ func TestSetParser_WithEXOption(t *testing.T) {
 func TestSetParser_WithEXOptionMissingValue(t *testing.T) {
 	msg := &protocol.Message{
 		Command: "SET",
-		Args: []protocol.Value{
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("key"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("value"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("EX"),
-			},
-		},
+		Args:    []string{"key", "value", "EX"},
 	}
 	parser := NewSetParser()
 	_, err := parser.Parse(msg)
@@ -143,24 +78,7 @@ func TestSetParser_WithEXOptionMissingValue(t *testing.T) {
 func TestSetParser_WithEXOptionInvalidValue(t *testing.T) {
 	msg := &protocol.Message{
 		Command: "SET",
-		Args: []protocol.Value{
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("key"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("value"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("EX"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("invalid"),
-			},
-		},
+		Args:    []string{"key", "value", "EX", "invalid"},
 	}
 	parser := NewSetParser()
 	_, err := parser.Parse(msg)
@@ -171,28 +89,7 @@ func TestSetParser_WithEXOptionInvalidValue(t *testing.T) {
 func TestSetParser_WithMultipleOptions(t *testing.T) {
 	msg := &protocol.Message{
 		Command: "SET",
-		Args: []protocol.Value{
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("key"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("value"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("NX"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("EX"),
-			},
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("120"),
-			},
-		},
+		Args:    []string{"key", "value", "NX", "EX", "120"},
 	}
 	parser := NewSetParser()
 	command, err := parser.Parse(msg)

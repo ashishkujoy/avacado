@@ -31,11 +31,7 @@ func NewIncrParser() *IncrParser {
 }
 
 func (i *IncrParser) Parse(msg *protocol.Message) (command.Command, error) {
-	key, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, err
-	}
-	return &Incr{Key: key}, nil
+	return &Incr{Key: msg.Args[0]}, nil
 }
 
 func (i *IncrParser) Name() string {

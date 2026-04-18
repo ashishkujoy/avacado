@@ -64,9 +64,7 @@ func TestTTLParser_ParseAValidCommand(t *testing.T) {
 	parser := TTLParser{}
 	msg := &protocol.Message{
 		Command: "ttl",
-		Args: []protocol.Value{
-			protocol.NewStringProtocolValue("key"),
-		},
+		Args:    []string{"key"},
 	}
 	cmd, err := parser.Parse(msg)
 	assert.NoError(t, err)
@@ -77,19 +75,7 @@ func TestTTLParser_ParseHandleErrorForMissingKey(t *testing.T) {
 	parser := TTLParser{}
 	msg := &protocol.Message{
 		Command: "ttl",
-		Args:    []protocol.Value{},
-	}
-	_, err := parser.Parse(msg)
-	assert.Error(t, err)
-}
-
-func TestTTLParser_ParseHandleErrorForIncorrectKeyDataType(t *testing.T) {
-	parser := TTLParser{}
-	msg := &protocol.Message{
-		Command: "ttl",
-		Args: []protocol.Value{
-			protocol.NewNumberProtocolValue(45),
-		},
+		Args:    []string{},
 	}
 	_, err := parser.Parse(msg)
 	assert.Error(t, err)

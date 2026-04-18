@@ -47,11 +47,7 @@ func TestLPushParser_Parse(t *testing.T) {
 	parser := NewLPushParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "LPUSH",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("mylist")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("val1")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("val2")},
-		},
+		Args:    []string{"mylist", "val1", "val2"},
 	})
 	assert.NoError(t, err)
 	lpush := cmd.(*LPush)
@@ -63,7 +59,7 @@ func TestLPushParser_ParseNoArgs(t *testing.T) {
 	parser := NewLPushParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "LPUSH",
-		Args:    []protocol.Value{},
+		Args:    []string{},
 	})
 	assert.Error(t, err)
 }
@@ -72,9 +68,7 @@ func TestLPushParser_ParseOnlyKey(t *testing.T) {
 	parser := NewLPushParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "LPUSH",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("mylist")},
-		},
+		Args:    []string{"mylist"},
 	})
 	assert.Error(t, err)
 }

@@ -70,10 +70,7 @@ func TestLIndexParser_Parse(t *testing.T) {
 	parser := NewLIndexParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "LINDEX",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("mylist")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("2")},
-		},
+		Args:    []string{"mylist", "2"},
 	})
 	assert.NoError(t, err)
 	lindex := cmd.(*LIndex)
@@ -85,10 +82,7 @@ func TestLIndexParser_ParseNegativeIndex(t *testing.T) {
 	parser := NewLIndexParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "LINDEX",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("mylist")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("-1")},
-		},
+		Args:    []string{"mylist", "-1"},
 	})
 	assert.NoError(t, err)
 	lindex := cmd.(*LIndex)
@@ -100,7 +94,7 @@ func TestLIndexParser_ParseNoArgs(t *testing.T) {
 	parser := NewLIndexParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "LINDEX",
-		Args:    []protocol.Value{},
+		Args:    []string{},
 	})
 	assert.Error(t, err)
 }
@@ -109,9 +103,7 @@ func TestLIndexParser_ParseMissingIndex(t *testing.T) {
 	parser := NewLIndexParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "LINDEX",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("mylist")},
-		},
+		Args:    []string{"mylist"},
 	})
 	assert.Error(t, err)
 }
@@ -120,11 +112,7 @@ func TestLIndexParser_ParseTooManyArgs(t *testing.T) {
 	parser := NewLIndexParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "LINDEX",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("mylist")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("1")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("extra")},
-		},
+		Args:    []string{"mylist", "1", "extra"},
 	})
 	assert.Error(t, err)
 }
@@ -133,10 +121,7 @@ func TestLIndexParser_ParseInvalidIndex(t *testing.T) {
 	parser := NewLIndexParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "LINDEX",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("mylist")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("notanumber")},
-		},
+		Args:    []string{"mylist", "notanumber"},
 	})
 	assert.Error(t, err)
 }

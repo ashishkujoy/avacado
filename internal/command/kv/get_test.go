@@ -63,12 +63,7 @@ func TestGetParser_Parse(t *testing.T) {
 	parser := NewGetParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "GET",
-		Args: []protocol.Value{
-			{
-				Type:  protocol.TypeBulkString,
-				Bytes: []byte("key1"),
-			},
-		},
+		Args:    []string{"key1"},
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "key1", cmd.(*Get).key)

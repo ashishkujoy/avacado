@@ -7,6 +7,7 @@ import (
 	"avacado/internal/storage/kv"
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -40,19 +41,10 @@ func NewSetParser() SetParser {
 }
 
 func (s SetParser) Parse(msg *protocol.Message) (command.Command, error) {
-	key, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, fmt.Errorf("set command failed to parse key: %w", err)
-	}
-	value, err := msg.Args[1].AsBytes()
-	if err != nil {
-		return nil, fmt.Errorf("set command failed to parse value: %w", err)
-	}
-	cmd := &Set{Key: key, Value: value}
+	cmd := &Set{Key: msg.Args[0], Value: []byte(msg.Args[1])}
 	options := kv.NewSetOptions()
 	for i := 2; i < len(msg.Args); i++ {
-		argName, _ := msg.Args[i].AsString()
-		argName = strings.ToUpper(argName)
+		argName := strings.ToUpper(msg.Args[i])
 		if argName == "NX" {
 			options = options.WithNX()
 		}
@@ -60,12 +52,11 @@ func (s SetParser) Parse(msg *protocol.Message) (command.Command, error) {
 			options = options.WithXX()
 		}
 		if argName == "EX" {
-			// EX expects a numeric value in the next argument
 			if i+1 >= len(msg.Args) {
 				return nil, fmt.Errorf("set command: EX option requires a value")
 			}
-			i++ // Move to the next argument
-			exSeconds, err := msg.Args[i].AsInt64()
+			i++
+			exSeconds, err := strconv.ParseInt(msg.Args[i], 10, 64)
 			if err != nil {
 				return nil, fmt.Errorf("set command: EX value must be an integer: %w", err)
 			}
@@ -75,18 +66,12 @@ func (s SetParser) Parse(msg *protocol.Message) (command.Command, error) {
 			options = options.WithGet()
 		}
 		if argName == "IFEQ" {
-			// IFEQ expects a value in the next argument
 			if i+1 >= len(msg.Args) {
 				return nil, fmt.Errorf("set command: IFEQ option requires a value")
 			}
-			i++ // Move to the next argument
-			ifeqValue, err := msg.Args[i].AsBytes()
-			if err != nil {
-				return nil, fmt.Errorf("set command: IFEQ value parsing failed: %w", err)
-			}
-			options = options.WithIFEQ(ifeqValue)
+			i++
+			options = options.WithIFEQ([]byte(msg.Args[i]))
 		}
-		// TODO: error handling for unknown arg
 	}
 	cmd.Options = options
 	return cmd, nil

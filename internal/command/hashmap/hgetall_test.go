@@ -67,9 +67,7 @@ func TestHGetAllParser_Parse(t *testing.T) {
 	parser := &HGetAllParser{}
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "HGETALL",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("myhash")},
-		},
+		Args:    []string{"myhash"},
 	})
 	assert.NoError(t, err)
 	hgetall := cmd.(*hGetAll)
@@ -80,7 +78,7 @@ func TestHGetAllParser_ParseTooFewArgs(t *testing.T) {
 	parser := &HGetAllParser{}
 	_, err := parser.Parse(&protocol.Message{
 		Command: "HGETALL",
-		Args:    []protocol.Value{},
+		Args:    []string{},
 	})
 	assert.Error(t, err)
 }
@@ -89,10 +87,7 @@ func TestHGetAllParser_ParseTooManyArgs(t *testing.T) {
 	parser := &HGetAllParser{}
 	_, err := parser.Parse(&protocol.Message{
 		Command: "HGETALL",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("myhash")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("extra")},
-		},
+		Args:    []string{"myhash", "extra"},
 	})
 	assert.Error(t, err)
 }
@@ -101,4 +96,3 @@ func TestHGetAllParser_Name(t *testing.T) {
 	parser := &HGetAllParser{}
 	assert.Equal(t, "HGETALL", parser.Name())
 }
-

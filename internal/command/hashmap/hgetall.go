@@ -41,11 +41,7 @@ func (p *HGetAllParser) Parse(msg *protocol.Message) (command.Command, error) {
 	if len(msg.Args) != 1 {
 		return nil, command.NewInvalidArgumentsCount(p.Name(), 1, len(msg.Args))
 	}
-	key, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError(p.Name(), "key")
-	}
-	return &hGetAll{key: key}, nil
+	return &hGetAll{key: msg.Args[0]}, nil
 }
 
 func (p *HGetAllParser) Name() string {

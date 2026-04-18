@@ -42,25 +42,12 @@ func (p *BRPopParser) Parse(msg *protocol.Message) (command.Command, error) {
 		return nil, command.NewInvalidArgumentsCount(p.Name(), 2, len(msg.Args))
 	}
 
-	timeoutStr, err := msg.Args[len(msg.Args)-1].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError(p.Name(), "timeout")
-	}
-	timeout, err := strconv.ParseFloat(timeoutStr, 64)
+	timeout, err := strconv.ParseFloat(msg.Args[len(msg.Args)-1], 64)
 	if err != nil || timeout < 0 {
 		return nil, command.NewInvalidTypeError(p.Name(), "timeout")
 	}
 
-	keyArgs := msg.Args[:len(msg.Args)-1]
-	keys := make([]string, len(keyArgs))
-	for i, arg := range keyArgs {
-		key, e := arg.AsString()
-		if e != nil {
-			return nil, command.NewInvalidTypeError(p.Name(), "key")
-		}
-		keys[i] = key
-	}
-
+	keys := msg.Args[:len(msg.Args)-1]
 	return &BRPop{Keys: keys, Timeout: timeout}, nil
 }
 

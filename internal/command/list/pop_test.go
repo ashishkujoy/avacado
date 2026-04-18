@@ -170,9 +170,7 @@ func TestLPopParser_ParseWithoutCount(t *testing.T) {
 	parser := NewLPopParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "LPOP",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("mylist")},
-		},
+		Args:    []string{"mylist"},
 	})
 	assert.NoError(t, err)
 	pop := cmd.(*Pop)
@@ -186,10 +184,7 @@ func TestLPopParser_ParseWithCount(t *testing.T) {
 	parser := NewLPopParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "LPOP",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("mylist")},
-			{Type: protocol.TypeNumber, Number: 3},
-		},
+		Args:    []string{"mylist", "3"},
 	})
 	assert.NoError(t, err)
 	pop := cmd.(*Pop)
@@ -203,7 +198,7 @@ func TestLPopParser_ParseNoArgs(t *testing.T) {
 	parser := NewLPopParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "LPOP",
-		Args:    []protocol.Value{},
+		Args:    []string{},
 	})
 	assert.Error(t, err)
 }
@@ -212,11 +207,7 @@ func TestLPopParser_ParseTooManyArgs(t *testing.T) {
 	parser := NewLPopParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "LPOP",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("key")},
-			{Type: protocol.TypeNumber, Number: 2},
-			{Type: protocol.TypeBulkString, Bytes: []byte("extra")},
-		},
+		Args:    []string{"key", "2", "extra"},
 	})
 	assert.Error(t, err)
 }
@@ -230,9 +221,7 @@ func TestRPopParser_ParseWithoutCount(t *testing.T) {
 	parser := NewRPopParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "RPOP",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("mylist")},
-		},
+		Args:    []string{"mylist"},
 	})
 	assert.NoError(t, err)
 	pop := cmd.(*Pop)
@@ -246,10 +235,7 @@ func TestRPopParser_ParseWithCount(t *testing.T) {
 	parser := NewRPopParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "RPOP",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("mylist")},
-			{Type: protocol.TypeNumber, Number: 3},
-		},
+		Args:    []string{"mylist", "3"},
 	})
 	assert.NoError(t, err)
 	pop := cmd.(*Pop)
@@ -263,7 +249,7 @@ func TestRPopParser_ParseNoArgs(t *testing.T) {
 	parser := NewRPopParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "RPOP",
-		Args:    []protocol.Value{},
+		Args:    []string{},
 	})
 	assert.Error(t, err)
 }
@@ -272,11 +258,7 @@ func TestRPopParser_ParseTooManyArgs(t *testing.T) {
 	parser := NewRPopParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "RPOP",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("key")},
-			{Type: protocol.TypeNumber, Number: 2},
-			{Type: protocol.TypeBulkString, Bytes: []byte("extra")},
-		},
+		Args:    []string{"key", "2", "extra"},
 	})
 	assert.Error(t, err)
 }

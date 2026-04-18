@@ -14,10 +14,7 @@ func TestDecrByParser_Parse(t *testing.T) {
 	d := &DecrByParser{}
 	cmd, err := d.Parse(&protocol.Message{
 		Command: "DECRBY",
-		Args: []protocol.Value{
-			protocol.NewStringProtocolValue("key"),
-			protocol.NewStringProtocolValue("5"),
-		},
+		Args:    []string{"key", "5"},
 	})
 	assert.NoError(t, err)
 	decrByCmd := cmd.(*DecrBy)

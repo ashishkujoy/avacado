@@ -33,22 +33,11 @@ func NewDecrByParser() *DecrByParser {
 }
 
 func (d *DecrByParser) Parse(msg *protocol.Message) (command.Command, error) {
-	key, err := msg.Args[0].AsString()
+	decrement, err := strconv.ParseInt(msg.Args[1], 10, 64)
 	if err != nil {
 		return nil, err
 	}
-
-	decrementStr, err := msg.Args[1].AsString()
-	if err != nil {
-		return nil, err
-	}
-
-	decrement, err := strconv.ParseInt(decrementStr, 10, 64)
-	if err != nil {
-		return nil, err
-	}
-
-	return &DecrBy{Key: key, Decrement: decrement}, nil
+	return &DecrBy{Key: msg.Args[0], Decrement: decrement}, nil
 }
 
 func (d *DecrByParser) Name() string {

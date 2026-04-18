@@ -6,6 +6,7 @@ import (
 	"avacado/internal/storage"
 	"context"
 	"errors"
+	"strconv"
 )
 
 type LIndex struct {
@@ -37,18 +38,11 @@ func (l *LIndexParser) Parse(msg *protocol.Message) (command.Command, error) {
 	if len(msg.Args) != 2 {
 		return nil, command.NewInvalidArgumentsCount(l.Name(), 2, len(msg.Args))
 	}
-	key, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError(l.Name(), "KEY")
-	}
-	index, err := msg.Args[1].AsInt64()
+	index, err := strconv.ParseInt(msg.Args[1], 10, 64)
 	if err != nil {
 		return nil, command.NewInvalidTypeError(l.Name(), "INDEX")
 	}
-	return &LIndex{
-		Key:   key,
-		Index: int(index),
-	}, nil
+	return &LIndex{Key: msg.Args[0], Index: int(index)}, nil
 }
 
 func (l *LIndexParser) Name() string {

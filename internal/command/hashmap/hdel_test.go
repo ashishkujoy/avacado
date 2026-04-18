@@ -54,10 +54,7 @@ func TestHDelParser_Parse(t *testing.T) {
 	parser := NewHDelParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "HDEL",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("myhash")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("field1")},
-		},
+		Args:    []string{"myhash", "field1"},
 	})
 	assert.NoError(t, err)
 	hdel := cmd.(*HDel)
@@ -69,12 +66,7 @@ func TestHDelParser_ParseMultipleFields(t *testing.T) {
 	parser := NewHDelParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "HDEL",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("myhash")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("field1")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("field2")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("field3")},
-		},
+		Args:    []string{"myhash", "field1", "field2", "field3"},
 	})
 	assert.NoError(t, err)
 	hdel := cmd.(*HDel)
@@ -86,7 +78,7 @@ func TestHDelParser_ParseTooFewArgs(t *testing.T) {
 	parser := NewHDelParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "HDEL",
-		Args:    []protocol.Value{},
+		Args:    []string{},
 	})
 	assert.Error(t, err)
 }
@@ -95,9 +87,7 @@ func TestHDelParser_ParseOnlyKey(t *testing.T) {
 	parser := NewHDelParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "HDEL",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("myhash")},
-		},
+		Args:    []string{"myhash"},
 	})
 	assert.Error(t, err)
 }

@@ -7,7 +7,7 @@ import (
 	"context"
 )
 
-// PTTL returns the time to live for a command in seconds
+// PTTL returns the time to live for a command in milliseconds
 type PTTL struct {
 	Key string
 }
@@ -35,11 +35,7 @@ func (t *PTTLParser) Parse(msg *protocol.Message) (command.Command, error) {
 	if len(msg.Args) != 1 {
 		return nil, command.NewInvalidArgumentsCount(t.Name(), 1, len(msg.Args))
 	}
-	key, err := msg.Args[0].AsString()
-	if err != nil {
-		return nil, command.NewInvalidTypeError(t.Name(), "key")
-	}
-	return &PTTL{Key: key}, nil
+	return &PTTL{Key: msg.Args[0]}, nil
 }
 
 func (t *PTTLParser) Name() string {

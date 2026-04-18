@@ -14,9 +14,7 @@ func TestExistsParser_ParseSingleKey(t *testing.T) {
 	e := &ExistsParser{}
 	cmd, err := e.Parse(&protocol.Message{
 		Command: "EXISTS",
-		Args: []protocol.Value{
-			protocol.NewStringProtocolValue("key1"),
-		},
+		Args:    []string{"key1"},
 	})
 	assert.NoError(t, err)
 	existsCmd := cmd.(*Exists)
@@ -27,11 +25,7 @@ func TestExistsParser_ParseMultipleKeys(t *testing.T) {
 	e := &ExistsParser{}
 	cmd, err := e.Parse(&protocol.Message{
 		Command: "EXISTS",
-		Args: []protocol.Value{
-			protocol.NewStringProtocolValue("key1"),
-			protocol.NewStringProtocolValue("key2"),
-			protocol.NewStringProtocolValue("key3"),
-		},
+		Args:    []string{"key1", "key2", "key3"},
 	})
 	assert.NoError(t, err)
 	existsCmd := cmd.(*Exists)

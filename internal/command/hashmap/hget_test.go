@@ -57,10 +57,7 @@ func TestHGetParser_Parse(t *testing.T) {
 	parser := NewHGetParser()
 	cmd, err := parser.Parse(&protocol.Message{
 		Command: "HGET",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("myhash")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("field1")},
-		},
+		Args:    []string{"myhash", "field1"},
 	})
 	assert.NoError(t, err)
 	hget := cmd.(*hGet)
@@ -72,7 +69,7 @@ func TestHGetParser_ParseTooFewArgs(t *testing.T) {
 	parser := NewHGetParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "HGET",
-		Args:    []protocol.Value{},
+		Args:    []string{},
 	})
 	assert.Error(t, err)
 }
@@ -81,11 +78,7 @@ func TestHGetParser_ParseTooManyArgs(t *testing.T) {
 	parser := NewHGetParser()
 	_, err := parser.Parse(&protocol.Message{
 		Command: "HGET",
-		Args: []protocol.Value{
-			{Type: protocol.TypeBulkString, Bytes: []byte("myhash")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("field1")},
-			{Type: protocol.TypeBulkString, Bytes: []byte("extra")},
-		},
+		Args:    []string{"myhash", "field1", "extra"},
 	})
 	assert.Error(t, err)
 }
@@ -94,4 +87,3 @@ func TestHGetParser_Name(t *testing.T) {
 	parser := NewHGetParser()
 	assert.Equal(t, "HGET", parser.Name())
 }
-
