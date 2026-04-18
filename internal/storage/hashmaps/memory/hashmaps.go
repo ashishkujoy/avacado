@@ -61,3 +61,14 @@ func (h *HashMaps) HGetAll(_ context.Context, name string) (map[string]string, e
 	}
 	return hMap.GetAll(), nil
 }
+
+func (h *HashMaps) HDel(_ context.Context, key string, fields []string) (int, error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	hMap, found := h.maps[key]
+	if !found {
+		return 0, nil
+	}
+	return hMap.Delete(fields), nil
+}

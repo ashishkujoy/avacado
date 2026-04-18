@@ -40,6 +40,21 @@ func (m *MockHashMaps) EXPECT() *MockHashMapsMockRecorder {
 	return m.recorder
 }
 
+// HDel mocks base method.
+func (m *MockHashMaps) HDel(ctx context.Context, key string, fields []string) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HDel", ctx, key, fields)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HDel indicates an expected call of HDel.
+func (mr *MockHashMapsMockRecorder) HDel(ctx, key, fields any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HDel", reflect.TypeOf((*MockHashMaps)(nil).HDel), ctx, key, fields)
+}
+
 // HGet mocks base method.
 func (m *MockHashMaps) HGet(ctx context.Context, name, field string) ([]byte, error) {
 	m.ctrl.T.Helper()
