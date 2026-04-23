@@ -27,6 +27,7 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 	registry.Register(expiry.NewTTLParser())
 	registry.Register(expiry.NewPTTLParser())
 	registry.Register(connection.NewHelloParser())
+	registry.Register(connection.NewPingParser())
 	registry.Register(client.NewClientParser())
 	registry.Register(kv.NewIncrParser())
 	registry.Register(kv.NewDecrParser())
