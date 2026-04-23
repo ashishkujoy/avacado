@@ -226,30 +226,48 @@ func NewPlainListPack(element []byte) *ListPack {
 }
 
 func (lp *ListPack) LRange(start, end int64) ([][]byte, error) {
-	lp.mu.Lock()
-	defer lp.mu.Unlock()
+	lp.mu.RLock()
+	defer lp.mu.RUnlock()
+	capacity := end - start + 1
+	if capacity <= 0 {
+		return [][]byte{}, nil
+	}
+	elements := make([][]byte, 0, capacity)
 	index := int64(0)
-	var elements [][]byte
-	_, err := traverse(lp.data, func(elem interface{}, _, _, _ int) (bool, error) {
+	_, err := traverseBytes(lp.data, func(elem []byte) bool {
 		if index < start {
 			index++
-			return true, nil
+			return true
 		}
 		if index > end {
-			return false, nil
+			return false
 		}
-		var element []byte
-		switch elem.(type) {
-		case []byte:
-			element = elem.([]byte)
-		case int:
-			element = []byte(fmt.Sprintf("%d", elem.(int)))
-		}
-		elements = append(elements, element)
+		elements = append(elements, elem)
 		index++
-		return true, nil
+		return true
 	})
 	return elements, err
+}
+
+// LRangeInto appends elements in [start, end] directly into result and returns the extended slice.
+// Callers should pre-allocate result with sufficient capacity to avoid reallocation.
+func (lp *ListPack) LRangeInto(result [][]byte, start, end int64) ([][]byte, error) {
+	lp.mu.RLock()
+	defer lp.mu.RUnlock()
+	index := int64(0)
+	_, err := traverseBytes(lp.data, func(elem []byte) bool {
+		if index < start {
+			index++
+			return true
+		}
+		if index > end {
+			return false
+		}
+		result = append(result, elem)
+		index++
+		return true
+	})
+	return result, err
 }
 
 func (lp *ListPack) Traverse(cb func(interface{}, int, int, int) (bool, error)) error {

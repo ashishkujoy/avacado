@@ -7,6 +7,78 @@ import (
 	"strconv"
 )
 
+// decodeAsBytes decodes an element from buf at offset and returns it as []byte,
+// converting stored integers to their decimal string representation.
+// Avoids the interface{} boxing that decode() requires.
+func decodeAsBytes(buf []byte, offset int) ([]byte, int, error) {
+	prefix := buf[offset]
+	if prefix&0x80 == 0 {
+		v, next, err := decode7BitInt(buf, offset)
+		if err != nil {
+			return nil, next, err
+		}
+		return strconv.AppendInt(nil, int64(v), 10), next, nil
+	} else if prefix&0xC0 == 0x80 {
+		return decode6BitStr(buf, offset)
+	} else if prefix&0xE0 == 0xC0 {
+		v, next, err := decode13BitInt(buf, offset)
+		if err != nil {
+			return nil, next, err
+		}
+		return strconv.AppendInt(nil, int64(v), 10), next, nil
+	} else if prefix&0xF0 == 0xE0 {
+		return decode12BitStr(buf, offset)
+	} else if prefix == 0xF0 {
+		return decode32BitStr(buf, offset)
+	} else if prefix == 0xF1 {
+		v, next, err := decode16BitInt(buf, offset)
+		if err != nil {
+			return nil, next, err
+		}
+		return strconv.AppendInt(nil, int64(v), 10), next, nil
+	} else if prefix == 0xF2 {
+		v, next, err := decode24BitInt(buf, offset)
+		if err != nil {
+			return nil, next, err
+		}
+		return strconv.AppendInt(nil, int64(v), 10), next, nil
+	} else if prefix == 0xF3 {
+		v, next, err := decode32BitInt(buf, offset)
+		if err != nil {
+			return nil, next, err
+		}
+		return strconv.AppendInt(nil, int64(v), 10), next, nil
+	} else if prefix == 0xF4 {
+		v, next, err := decode64BitInt(buf, offset)
+		if err != nil {
+			return nil, next, err
+		}
+		return strconv.AppendInt(nil, int64(v), 10), next, nil
+	}
+	return nil, offset, unknownEncodingError
+}
+
+// traverseBytes iterates over buf like traverse but delivers each element as []byte
+// via fn, avoiding the interface{} boxing that traverse requires.
+// Traversal stops when fn returns false or the buffer ends.
+func traverseBytes(buf []byte, fn func(elem []byte) bool) (int, error) {
+	offset := 6
+	for offset < len(buf) {
+		if buf[offset] == endOfBuf {
+			break
+		}
+		elem, newOffset, err := decodeAsBytes(buf, offset)
+		if err != nil {
+			return offset, err
+		}
+		offset = newOffset
+		if !fn(elem) {
+			break
+		}
+	}
+	return offset, nil
+}
+
 var unknownEncodingError = errors.New("unknown encoding")
 var unknownTypeError = errors.New("unknown type")
 

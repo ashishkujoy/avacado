@@ -182,7 +182,7 @@ func (ql *quickList) lRange(start, end int64) [][]byte {
 		return [][]byte{}
 	}
 
-	var result [][]byte
+	result := make([][]byte, 0, end-start+1)
 	offset := int64(0)
 
 	for _, lp := range ql.lps {
@@ -205,8 +205,7 @@ func (ql *quickList) lRange(start, end int64) [][]byte {
 			localEnd = lpLen - 1
 		}
 
-		elements, _ := lp.LRange(localStart, localEnd)
-		result = append(result, elements...)
+		result, _ = lp.LRangeInto(result, localStart, localEnd)
 		offset += lpLen
 	}
 
