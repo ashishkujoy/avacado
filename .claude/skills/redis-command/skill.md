@@ -25,33 +25,25 @@ This skill automates the implementation of a new Redis command by:
 
 ### Step 1: Gather Requirements
 
-Ask the user for:
-- Command name (e.g., APPEND, STRLEN, INCRBY)
-- Command description and Redis specification
-- Arguments (names and types)
-- Return type (integer, string, bulk string, array, etc.)
-- Edge cases to handle
+- Ask the user for Command name (e.g., APPEND, STRLEN, INCRBY)
+- Search Redis documentation for the command to understand its behavior
+- Discuss the architectural changes needed in the storage layer and command layer
+- Identify edge cases and error conditions to test
 
 ### Step 2: Storage Layer
 
-1. **Add method to Store interface** (`internal/storage/kv/store.go`)
+1. **Add method to Store interface** (`internal/storage/<storage_type>/<storage_type>.go`)
    - Add method signature with appropriate parameters
    - Include context as first parameter
    - Use Go conventions for return types
 
-2. **Implement in memory store** (`internal/storage/kv/memory/memory.go`)
+2. **Implement in memory store** (`internal/storage/<storage_type>/memory/<storage_type>.go`)
    - Add method with proper mutex locking (`k.mu.Lock()` / `defer k.mu.Unlock()`)
-   - Handle non-existent keys
-   - Handle expired keys (treat as non-existent)
    - Implement the core logic
    - Return appropriate values
 
-3. **Add memory store test** (`internal/storage/kv/memory/memory_test.go`)
-   - Test with non-existent key
-   - Test with existing key
-   - Test with expired key
-   - Test error cases
-   - Test edge cases specific to the command
+3. **Add memory store test** (`internal/storage/<storage_type>/memory/storage_type_test.go`)
+   - Test for all different scenarios (normal, edge cases, error conditions)
 
 ### Step 3: Command Layer
 
