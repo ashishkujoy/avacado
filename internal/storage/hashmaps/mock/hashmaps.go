@@ -55,6 +55,20 @@ func (mr *MockHashMapsMockRecorder) HDel(ctx, key, fields any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HDel", reflect.TypeOf((*MockHashMaps)(nil).HDel), ctx, key, fields)
 }
 
+// HExists mocks base method.
+func (m *MockHashMaps) HExists(ctx context.Context, key, field string) int {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HExists", ctx, key, field)
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// HExists indicates an expected call of HExists.
+func (mr *MockHashMapsMockRecorder) HExists(ctx, key, field any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HExists", reflect.TypeOf((*MockHashMaps)(nil).HExists), ctx, key, field)
+}
+
 // HGet mocks base method.
 func (m *MockHashMaps) HGet(ctx context.Context, name, field string) ([]byte, error) {
 	m.ctrl.T.Helper()

@@ -62,6 +62,21 @@ func (h *HashMaps) HGetAll(_ context.Context, name string) (map[string]string, e
 	return hMap.GetAll(), nil
 }
 
+func (h *HashMaps) HExists(_ context.Context, key string, field string) int {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	hMap, found := h.maps[key]
+	if !found {
+		return 0
+	}
+	_, exists := hMap.Get(field)
+	if exists {
+		return 1
+	}
+	return 0
+}
+
 func (h *HashMaps) HDel(_ context.Context, key string, fields []string) (int, error) {
 	h.mu.Lock()
 	defer h.mu.Unlock()

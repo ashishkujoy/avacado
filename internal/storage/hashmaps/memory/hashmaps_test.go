@@ -81,6 +81,43 @@ func TestHashMaps_HGetAll(t *testing.T) {
 	})
 }
 
+func TestHashMaps_HExists(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("returns 0 for non-existing key", func(t *testing.T) {
+		maps := NewHashMaps()
+		result := maps.HExists(ctx, "non-existing", "field1")
+		assert.Equal(t, 0, result)
+	})
+
+	t.Run("returns 0 for existing key but missing field", func(t *testing.T) {
+		maps := NewHashMaps()
+		maps.HSet(ctx, "map1", []string{"key1", "V1"})
+		result := maps.HExists(ctx, "map1", "missing")
+		assert.Equal(t, 0, result)
+	})
+
+	t.Run("returns 1 for existing field - listpack encoding", func(t *testing.T) {
+		maps := NewHashMaps()
+		maps.HSet(ctx, "map1", []string{"key1", "V1", "key2", "V2"})
+		assert.Nil(t, maps.maps["map1"].hash)
+		result := maps.HExists(ctx, "map1", "key1")
+		assert.Equal(t, 1, result)
+	})
+
+	t.Run("returns 1 for existing field - hash encoding", func(t *testing.T) {
+		maps := NewHashMaps()
+		kvs := make([]string, 0, (maxEntryCount+1)*2)
+		for i := 0; i <= maxEntryCount; i++ {
+			kvs = append(kvs, fmt.Sprintf("key%d", i), fmt.Sprintf("val%d", i))
+		}
+		maps.HSet(ctx, "map1", kvs)
+		assert.NotNil(t, maps.maps["map1"].hash)
+		result := maps.HExists(ctx, "map1", "key0")
+		assert.Equal(t, 1, result)
+	})
+}
+
 func TestHashMaps_HDel(t *testing.T) {
 	ctx := context.Background()
 

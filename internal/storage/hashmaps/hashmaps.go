@@ -8,4 +8,5 @@ type HashMaps interface {
 	HGet(ctx context.Context, name string, field string) ([]byte, error)
 	HGetAll(ctx context.Context, name string) (map[string]string, error)
 	HDel(ctx context.Context, key string, fields []string) (int, error)
+	HExists(ctx context.Context, key string, field string) int
 }

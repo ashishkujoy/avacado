@@ -50,6 +50,7 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 	registry.Register(hashmap.NewHGetParser())
 	registry.Register(&hashmap.HGetAllParser{})
 	registry.Register(hashmap.NewHDelParser())
+	registry.Register(hashmap.NewHExistsParser())
 
 	return registry
 }

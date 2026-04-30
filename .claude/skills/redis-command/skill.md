@@ -26,7 +26,7 @@ This skill automates the implementation of a new Redis command by:
 ### Step 1: Gather Requirements
 
 - Ask the user for Command name (e.g., APPEND, STRLEN, INCRBY)
-- Search Redis documentation for the command to understand its behavior
+- Search Redis documentation for the command to understand its behavior. https://redis.io/docs/latest/commands/<command_name>
 - Discuss the architectural changes needed in the storage layer and command layer
 - Identify edge cases and error conditions to test
 
