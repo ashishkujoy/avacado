@@ -58,13 +58,12 @@ func (s *Server) Serve(conn Connection, logger *slog.Logger) error {
 		if err != nil {
 			logger.Error("failed to parse command", "error", err.Error())
 			_, _ = conn.Write(s.protocol.SerializeError(err))
-			return err
+			continue
 		}
 		response := s.executor.Submit(ctx, cmd)
 		if response.Err != nil {
-			logger.Error("failed to execute command", "error", response.Err.Error())
 			_, _ = conn.Write(s.protocol.SerializeError(response.Err))
-			return response.Err
+			continue
 		}
 
 		// Blocking commands (BLPOP/BRPOP) return a non-nil BlockCh when no data

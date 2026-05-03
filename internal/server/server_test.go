@@ -70,6 +70,7 @@ func TestServer_HandlesErrorOnCommandParsing(t *testing.T) {
 	parser.EXPECT().Parse().Return(msg, nil)
 	registry.EXPECT().Parse(gomock.Any()).Return(nil, fmt.Errorf("command parse error"))
 	proto.EXPECT().SerializeError(gomock.Any()).Return([]byte("-command parse error\r\n"))
+	parser.EXPECT().Parse().Return(nil, io.EOF)
 
 	s.Serve(connection, logger)
 	assert.Equal(t, "-command parse error\r\n", string(connection.dataWritten))
@@ -103,6 +104,7 @@ func TestServer_HandlesCommandExecutionError(t *testing.T) {
 	registry.EXPECT().Parse(gomock.Any()).Return(cmd, nil)
 	cmd.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(resp)
 	proto.EXPECT().SerializeError(gomock.Any()).Return([]byte("-command Execution fail\r\n"))
+	parser.EXPECT().Parse().Return(nil, io.EOF)
 
 	s.Serve(connection, logger)
 	assert.Equal(t, "-command Execution fail\r\n", string(connection.dataWritten))

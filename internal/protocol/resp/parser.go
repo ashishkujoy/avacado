@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 )
 
 // Parser parses incoming RESP commands from clients.
@@ -26,7 +27,12 @@ func (p *Parser) Parse() (Value, error) {
 	case TypeArray:
 		return p.parseArray()
 	default:
-		return Value{}, fmt.Errorf("unsupported RESP type from client: %c (only arrays of bulk strings are allowed)", typeByte)
+		// Inline protocol: plain-text commands like "PING\r\n" start with a letter.
+		// Reject any other byte (RESP type indicators like +, -, :, %, ~ etc.).
+		if (typeByte >= 'A' && typeByte <= 'Z') || (typeByte >= 'a' && typeByte <= 'z') {
+			return p.parseInline(typeByte)
+		}
+		return Value{}, fmt.Errorf("unsupported RESP type from client: %c", typeByte)
 	}
 }
 
@@ -121,6 +127,25 @@ func (p *Parser) parseArray() (Value, error) {
 	}
 
 	return NewArray(array), nil
+}
+
+// parseInline parses an inline command (e.g., "PING\r\n" or "SET key val\r\n").
+// firstByte is the already-consumed first byte of the line.
+func (p *Parser) parseInline(firstByte byte) (Value, error) {
+	rest, err := p.readLine()
+	if err != nil {
+		return Value{}, fmt.Errorf("failed to read inline command: %w", err)
+	}
+	line := string(append([]byte{firstByte}, rest...))
+	parts := strings.Fields(line)
+	if len(parts) == 0 {
+		return Value{}, fmt.Errorf("empty inline command")
+	}
+	values := make([]Value, len(parts))
+	for i, part := range parts {
+		values[i] = NewBulkString([]byte(part))
+	}
+	return NewArray(values), nil
 }
 
 // NewParser creates a new buffered io based parser from the given io reader
