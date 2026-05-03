@@ -4,6 +4,7 @@ import (
 	"avacado/internal/command"
 	"avacado/internal/protocol"
 	"avacado/internal/storage"
+	"avacado/internal/storage/lists"
 	"context"
 	"strconv"
 	"time"
@@ -14,21 +15,35 @@ type BLPop struct {
 	Timeout float64
 }
 
-func (b *BLPop) Execute(ctx context.Context, storage storage.Storage) *protocol.Response {
-	lists := storage.Lists()
-
-	timeout := ctx
-	if b.Timeout != 0.0 {
-		t, cancel := context.WithTimeout(ctx, time.Duration(b.Timeout*float64(time.Second)))
-		timeout = t
-		defer cancel()
+func (b *BLPop) Execute(ctx context.Context, s storage.Storage) *protocol.Response {
+	// Try immediate pop from each key in order.
+	for _, key := range b.Keys {
+		vals, _ := s.Lists().LPop(ctx, key, 1)
+		if len(vals) > 0 {
+			return protocol.NewArrayResponse([]interface{}{key, vals[0]})
+		}
 	}
-	ch := lists.BlPop(timeout, b.Keys)
-	data, ok := <-ch
+
+	// No immediate data — register as a blocked client via the executor's BlockRegistry.
+	registry, ok := command.BlockRegistryFromContext(ctx)
 	if !ok {
 		return protocol.NewNullBulkStringResponse()
 	}
-	return protocol.NewArrayResponse([]interface{}{data.Key, data.Value})
+	blockCh, cancelFn := registry.RegisterBlockedClient(b.Keys, lists.Left)
+
+	// Start a timeout goroutine only when a finite timeout is set.
+	// For timeout=0 the client waits indefinitely until a push arrives.
+	if b.Timeout > 0 {
+		go func() {
+			select {
+			case <-time.After(time.Duration(b.Timeout * float64(time.Second))):
+			case <-ctx.Done():
+			}
+			cancelFn()
+		}()
+	}
+
+	return &protocol.Response{BlockCh: blockCh}
 }
 
 type BLPopParser struct{}

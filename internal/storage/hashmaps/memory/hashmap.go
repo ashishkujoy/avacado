@@ -3,7 +3,6 @@ package memory
 import (
 	"avacado/internal/storage/listpack"
 	"strconv"
-	"sync"
 )
 
 const defaultMaxListPackSize = 1024 * 8
@@ -17,8 +16,9 @@ const (
 	hashEncoding     encodingType = 1
 )
 
+// HashMap stores key-value pairs, internally using either listpack or hash encoding.
+// All methods are called exclusively by the executor goroutine — no locking needed.
 type HashMap struct {
-	mu       sync.RWMutex
 	lp       *listpack.ListPack
 	hash     map[string]string
 	encoding encodingType
@@ -26,15 +26,12 @@ type HashMap struct {
 
 func NewHashMap() *HashMap {
 	return &HashMap{
-		mu:       sync.RWMutex{},
 		lp:       listpack.NewListPack(defaultMaxListPackSize),
 		encoding: listpackEncoding,
 	}
 }
 
 func (h *HashMap) Set(key, value string) int {
-	h.mu.Lock()
-	defer h.mu.Unlock()
 	existingSize := h.size()
 
 	if existingSize >= maxEntryCount && h.encoding != hashEncoding {
@@ -52,9 +49,6 @@ func (h *HashMap) Set(key, value string) int {
 }
 
 func (h *HashMap) Get(key string) ([]byte, bool) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
 	if h.encoding == hashEncoding {
 		v, ok := h.hash[key]
 		if !ok {
@@ -84,9 +78,6 @@ func (h *HashMap) Get(key string) ([]byte, bool) {
 }
 
 func (h *HashMap) GetAll() map[string]string {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
 	if h.encoding == hashEncoding {
 		return copyHashMap(h.hash)
 	}
@@ -94,15 +85,10 @@ func (h *HashMap) GetAll() map[string]string {
 }
 
 func (h *HashMap) Size() int {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
-
 	return h.size()
 }
 
 func (h *HashMap) Delete(fields []string) int {
-	h.mu.Lock()
-	defer h.mu.Unlock()
 	currentSize := h.size()
 
 	if h.encoding == hashEncoding {
@@ -177,7 +163,6 @@ func (h *HashMap) size() int {
 }
 
 // migrateToHashMap converts the underlying listPack to a hashmap.
-// Must be called with h.mu held. Should only be called from set methods.
 func (h *HashMap) migrateToHashMap() error {
 	length := h.lp.Length()
 	entries, err := h.lp.LRange(0, int64(length))

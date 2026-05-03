@@ -7,6 +7,25 @@ import (
 	"fmt"
 )
 
+// BlockRegistry is implemented by the executor and injected via context so blocking
+// commands can register without importing the executor package.
+type BlockRegistry interface {
+	RegisterBlockedClient(keys []string, direction string) (<-chan *protocol.Response, context.CancelFunc)
+}
+
+type blockRegistryKey struct{}
+
+// BlockRegistryFromContext extracts the BlockRegistry injected by the executor.
+func BlockRegistryFromContext(ctx context.Context) (BlockRegistry, bool) {
+	r, ok := ctx.Value(blockRegistryKey{}).(BlockRegistry)
+	return r, ok
+}
+
+// ContextWithBlockRegistry returns a context that carries the given registry.
+func ContextWithBlockRegistry(ctx context.Context, r BlockRegistry) context.Context {
+	return context.WithValue(ctx, blockRegistryKey{}, r)
+}
+
 // Command represent a redis command.
 //
 //go:generate sh -c "rm -f mock/command.go && mockgen -source=command.go -destination=mock/command.go -package=mockcommand"

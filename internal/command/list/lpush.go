@@ -12,6 +12,8 @@ type LPush struct {
 	Values [][]byte
 }
 
+func (l *LPush) PushedKey() string { return l.Key }
+
 func (l *LPush) Execute(ctx context.Context, storage storage.Storage) *protocol.Response {
 	size, err := storage.Lists().LPush(ctx, l.Key, l.Values...)
 	if err != nil {

@@ -4,14 +4,13 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"sync"
 )
 
 var listPackNotEnoughSizeError = errors.New("not enough space in lp")
 
 // ListPack represents a list pack data structure used for storing small lists in memory.
+// All methods are called exclusively by the executor goroutine — no locking needed.
 type ListPack struct {
-	mu      sync.RWMutex
 	data    []byte
 	maxSize int
 }
@@ -21,7 +20,7 @@ func NewEmptyListPack(maxSize int) *ListPack {
 	binary.BigEndian.PutUint32(data[:4], 7)
 	binary.BigEndian.PutUint16(data[4:6], 0)
 	data[6] = 0xFF
-	return &ListPack{data: data, mu: sync.RWMutex{}, maxSize: maxSize}
+	return &ListPack{data: data, maxSize: maxSize}
 }
 
 func NewListPack(maxSize int, elements ...[]byte) *ListPack {
@@ -33,27 +32,19 @@ func NewListPack(maxSize int, elements ...[]byte) *ListPack {
 }
 
 func (lp *ListPack) Length() int {
-	lp.mu.RLock()
-	defer lp.mu.RUnlock()
 	return int(binary.BigEndian.Uint16(lp.data[4:6]))
 }
 
 func (lp *ListPack) IsFull() bool {
-	lp.mu.RLock()
-	defer lp.mu.RUnlock()
 	size := int(binary.BigEndian.Uint32(lp.data[0:4]))
 	return (size*100)/lp.maxSize >= 95
 }
 
 func (lp *ListPack) ByteSize() int {
-	lp.mu.RLock()
-	defer lp.mu.RUnlock()
 	return int(binary.BigEndian.Uint32(lp.data[:4]))
 }
 
 func (lp *ListPack) Push(value []byte) (int, error) {
-	lp.mu.Lock()
-	defer lp.mu.Unlock()
 	return lp._push(value)
 }
 
@@ -103,8 +94,6 @@ func (lp *ListPack) Pop() []byte {
 }
 
 func (lp *ListPack) LPush(value []byte) (int, error) {
-	lp.mu.Lock()
-	defer lp.mu.Unlock()
 	elemCount := int(binary.BigEndian.Uint16(lp.data[4:6]))
 
 	bytesSize := int(binary.BigEndian.Uint32(lp.data[:4]))
@@ -124,8 +113,6 @@ func (lp *ListPack) LPush(value []byte) (int, error) {
 }
 
 func (lp *ListPack) LPop(count int) [][]byte {
-	lp.mu.Lock()
-	defer lp.mu.Unlock()
 	byteSize := int(binary.BigEndian.Uint32(lp.data[:4]))
 	length := int(binary.BigEndian.Uint16(lp.data[4:6]))
 	count = min(count, length)
@@ -154,9 +141,6 @@ func (lp *ListPack) LPop(count int) [][]byte {
 }
 
 func (lp *ListPack) IsEmpty() bool {
-	lp.mu.RLock()
-	defer lp.mu.RUnlock()
-
 	size := binary.BigEndian.Uint16(lp.data[4:6])
 	return size == 0
 }
@@ -226,8 +210,6 @@ func NewPlainListPack(element []byte) *ListPack {
 }
 
 func (lp *ListPack) LRange(start, end int64) ([][]byte, error) {
-	lp.mu.RLock()
-	defer lp.mu.RUnlock()
 	capacity := end - start + 1
 	if capacity <= 0 {
 		return [][]byte{}, nil
@@ -252,8 +234,6 @@ func (lp *ListPack) LRange(start, end int64) ([][]byte, error) {
 // LRangeInto appends elements in [start, end] directly into result and returns the extended slice.
 // Callers should pre-allocate result with sufficient capacity to avoid reallocation.
 func (lp *ListPack) LRangeInto(result [][]byte, start, end int64) ([][]byte, error) {
-	lp.mu.RLock()
-	defer lp.mu.RUnlock()
 	index := int64(0)
 	_, err := traverseBytes(lp.data, func(elem []byte) bool {
 		if index < start {
@@ -282,8 +262,6 @@ func (lp *ListPack) InsertAt(i int, bytes []byte) error {
 	if i < 0 {
 		return errors.New("negative index not supported")
 	}
-	lp.mu.Lock()
-	defer lp.mu.Unlock()
 	oldSize := binary.BigEndian.Uint32(lp.data[:4])
 	oldEntryCount := binary.BigEndian.Uint16(lp.data[4:6])
 	if i > int(oldEntryCount) {
@@ -320,8 +298,6 @@ func (lp *ListPack) InsertAt(i int, bytes []byte) error {
 }
 
 func (lp *ListPack) ReplaceAt(i int, element []byte) error {
-	lp.mu.Lock()
-	defer lp.mu.Unlock()
 	start, end, err := getStartAndEndPositionOf(lp.data, i)
 	if err != nil {
 		return err
@@ -366,8 +342,6 @@ func (lp *ListPack) replaceWithGrow(start, end, newSize int, element []byte) err
 }
 
 func (lp *ListPack) PushAllOrNone(entries ...[]byte) (int, error) {
-	lp.mu.Lock()
-	defer lp.mu.Unlock()
 	currentLpSize := int(binary.BigEndian.Uint32(lp.data[:4]))
 	size := 0
 	for _, entry := range entries {
@@ -388,8 +362,6 @@ func (lp *ListPack) EncodedSize(entry []byte) int {
 }
 
 func (lp *ListPack) DeleteFromIndex(startingIndex int, count int) {
-	lp.mu.Lock()
-	defer lp.mu.Unlock()
 	bytesSize := int(binary.BigEndian.Uint32(lp.data[:4]))
 	size := int(binary.BigEndian.Uint16(lp.data[4:6]))
 	endIndex := startingIndex + count - 1

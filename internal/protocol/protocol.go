@@ -122,8 +122,9 @@ type Message struct {
 
 // Response represents a protocol response
 type Response struct {
-	Value Value
-	Err   error
+	Value   Value
+	Err     error
+	BlockCh <-chan *Response // non-nil: blocking command waiting for data (BLPOP/BRPOP)
 }
 
 // NewSuccessResponse creates a new success response

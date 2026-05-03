@@ -19,6 +19,45 @@ import (
 	gomock "go.uber.org/mock/gomock"
 )
 
+// MockBlockRegistry is a mock of BlockRegistry interface.
+type MockBlockRegistry struct {
+	ctrl     *gomock.Controller
+	recorder *MockBlockRegistryMockRecorder
+	isgomock struct{}
+}
+
+// MockBlockRegistryMockRecorder is the mock recorder for MockBlockRegistry.
+type MockBlockRegistryMockRecorder struct {
+	mock *MockBlockRegistry
+}
+
+// NewMockBlockRegistry creates a new mock instance.
+func NewMockBlockRegistry(ctrl *gomock.Controller) *MockBlockRegistry {
+	mock := &MockBlockRegistry{ctrl: ctrl}
+	mock.recorder = &MockBlockRegistryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockBlockRegistry) EXPECT() *MockBlockRegistryMockRecorder {
+	return m.recorder
+}
+
+// RegisterBlockedClient mocks base method.
+func (m *MockBlockRegistry) RegisterBlockedClient(keys []string, direction string) (<-chan *protocol.Response, context.CancelFunc) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RegisterBlockedClient", keys, direction)
+	ret0, _ := ret[0].(<-chan *protocol.Response)
+	ret1, _ := ret[1].(context.CancelFunc)
+	return ret0, ret1
+}
+
+// RegisterBlockedClient indicates an expected call of RegisterBlockedClient.
+func (mr *MockBlockRegistryMockRecorder) RegisterBlockedClient(keys, direction any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterBlockedClient", reflect.TypeOf((*MockBlockRegistry)(nil).RegisterBlockedClient), keys, direction)
+}
+
 // MockCommand is a mock of Command interface.
 type MockCommand struct {
 	ctrl     *gomock.Controller

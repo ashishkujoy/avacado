@@ -2,15 +2,14 @@ package memory
 
 import (
 	"avacado/internal/storage/listpack"
-	"sync"
 )
 
 const defaultMaxListPackSize = 1024 * 8
 
 // quickList represents a quick list data structure used for storing lists in memory.
+// All methods are called exclusively by the executor goroutine — no locking needed.
 type quickList struct {
 	lps             []*listpack.ListPack
-	mu              sync.RWMutex
 	maxListPackSize int
 	size            int
 }
@@ -18,22 +17,17 @@ type quickList struct {
 func newQuickList(maxListPackSize int) *quickList {
 	return &quickList{
 		lps:             []*listpack.ListPack{listpack.NewEmptyListPack(maxListPackSize)},
-		mu:              sync.RWMutex{},
 		maxListPackSize: maxListPackSize,
 		size:            0,
 	}
 }
 
 func (ql *quickList) length() int {
-	ql.mu.RLock()
-	defer ql.mu.RUnlock()
 	return ql.size
 }
 
 // lPush adds elements to the head of the quick list and returns the new length of the list.
 func (ql *quickList) lPush(elements [][]byte) int {
-	ql.mu.Lock()
-	defer ql.mu.Unlock()
 	for _, element := range elements {
 		if listpack.IsLargerThanListPackSize(element, ql.maxListPackSize) {
 			lp := listpack.NewPlainListPack(element)
@@ -58,8 +52,6 @@ func (ql *quickList) lPush(elements [][]byte) int {
 
 // rPush adds an element to the end of the quick list and returns the new length of the list.
 func (ql *quickList) rPush(elements [][]byte) int {
-	ql.mu.Lock()
-	defer ql.mu.Unlock()
 	for _, element := range elements {
 		// if element is larger than maxListPackSize, we need to create a plain ListPack for it
 		if listpack.IsLargerThanListPackSize(element, ql.maxListPackSize) {
@@ -86,8 +78,6 @@ func (ql *quickList) rPush(elements [][]byte) int {
 
 // lPop removes elements from the head of the quick list and returns the elements and new length of the list.
 func (ql *quickList) lPop(count int) ([][]byte, int) {
-	ql.mu.Lock()
-	defer ql.mu.Unlock()
 	if ql.size == 0 {
 		return nil, 0
 	}
@@ -113,8 +103,6 @@ func (ql *quickList) lPop(count int) ([][]byte, int) {
 
 // rPop removes an element from the end of the quick list and return the element and new length of the list.
 func (ql *quickList) rPop(count int) ([][]byte, int) {
-	ql.mu.Lock()
-	defer ql.mu.Unlock()
 	if ql.size == 0 {
 		return nil, 0
 	}
@@ -136,8 +124,6 @@ func (ql *quickList) rPop(count int) ([][]byte, int) {
 }
 
 func (ql *quickList) atIndex(index int) ([]byte, bool) {
-	ql.mu.RLock()
-	defer ql.mu.RUnlock()
 	if index < 0 {
 		index = ql.size + index
 	}
@@ -158,9 +144,6 @@ func (ql *quickList) atIndex(index int) ([]byte, bool) {
 
 // lRange return elements from start to end(inclusive) index
 func (ql *quickList) lRange(start, end int64) [][]byte {
-	ql.mu.RLock()
-	defer ql.mu.RUnlock()
-
 	size := int64(ql.size)
 
 	if start < 0 {

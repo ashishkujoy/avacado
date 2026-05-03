@@ -2,10 +2,12 @@ package server
 
 import (
 	mockcommand "avacado/internal/command/mock"
+	"avacado/internal/executor"
 	"avacado/internal/observability"
 	protocol2 "avacado/internal/protocol"
 	mockprotocol "avacado/internal/protocol/mock"
 	mocksstorage "avacado/internal/storage/mock"
+	"context"
 	"fmt"
 	"io"
 	"testing"
@@ -16,12 +18,17 @@ import (
 
 func TestServer_HandlesErrorOnProtocolMessageParsing(t *testing.T) {
 	controller := gomock.NewController(t)
-	protocol := mockprotocol.NewMockProtocol(controller)
-	storage := mocksstorage.NewMockStorage(controller)
+	proto := mockprotocol.NewMockProtocol(controller)
+	store := mocksstorage.NewMockStorage(controller)
 	registry := mockcommand.NewMockParserRegistry(controller)
 	parser := mockprotocol.NewMockParser(controller)
 
-	server := NewServer(protocol, registry, storage)
+	exec := executor.New(store)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go exec.Run(ctx)
+
+	s := NewServer(proto, registry, exec)
 	logger := observability.NewNoOutLogger()
 
 	connection := &mockConnection{
@@ -30,22 +37,27 @@ func TestServer_HandlesErrorOnProtocolMessageParsing(t *testing.T) {
 		dataWritten: []byte{},
 	}
 
-	protocol.EXPECT().CreateParser(connection).Return(parser)
+	proto.EXPECT().CreateParser(connection).Return(parser)
 	parser.EXPECT().Parse().Return(nil, fmt.Errorf("protocol parse error"))
-	protocol.EXPECT().SerializeError(gomock.Any()).Return([]byte("-protocol parse error\r\n"))
+	proto.EXPECT().SerializeError(gomock.Any()).Return([]byte("-protocol parse error\r\n"))
 
-	server.Serve(connection, logger)
+	s.Serve(connection, logger)
 	assert.Equal(t, "-protocol parse error\r\n", string(connection.dataWritten))
 }
 
 func TestServer_HandlesErrorOnCommandParsing(t *testing.T) {
 	controller := gomock.NewController(t)
-	protocol := mockprotocol.NewMockProtocol(controller)
-	storage := mocksstorage.NewMockStorage(controller)
+	proto := mockprotocol.NewMockProtocol(controller)
+	store := mocksstorage.NewMockStorage(controller)
 	registry := mockcommand.NewMockParserRegistry(controller)
 	parser := mockprotocol.NewMockParser(controller)
 
-	server := NewServer(protocol, registry, storage)
+	exec := executor.New(store)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go exec.Run(ctx)
+
+	s := NewServer(proto, registry, exec)
 	logger := observability.NewNoOutLogger()
 
 	connection := &mockConnection{
@@ -54,25 +66,30 @@ func TestServer_HandlesErrorOnCommandParsing(t *testing.T) {
 		dataWritten: []byte{},
 	}
 	msg := &protocol2.Message{}
-	protocol.EXPECT().CreateParser(connection).Return(parser)
+	proto.EXPECT().CreateParser(connection).Return(parser)
 	parser.EXPECT().Parse().Return(msg, nil)
 	registry.EXPECT().Parse(gomock.Any()).Return(nil, fmt.Errorf("command parse error"))
-	protocol.EXPECT().SerializeError(gomock.Any()).Return([]byte("-command parse error\r\n"))
+	proto.EXPECT().SerializeError(gomock.Any()).Return([]byte("-command parse error\r\n"))
 
-	server.Serve(connection, logger)
+	s.Serve(connection, logger)
 	assert.Equal(t, "-command parse error\r\n", string(connection.dataWritten))
 }
 
 func TestServer_HandlesCommandExecutionError(t *testing.T) {
 	controller := gomock.NewController(t)
-	protocol := mockprotocol.NewMockProtocol(controller)
-	storage := mocksstorage.NewMockStorage(controller)
+	proto := mockprotocol.NewMockProtocol(controller)
+	store := mocksstorage.NewMockStorage(controller)
 	registry := mockcommand.NewMockParserRegistry(controller)
 	cmd := mockcommand.NewMockCommand(controller)
 	parser := mockprotocol.NewMockParser(controller)
 	resp := protocol2.NewErrorResponse(fmt.Errorf("command Execution fail"))
 
-	server := NewServer(protocol, registry, storage)
+	exec := executor.New(store)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go exec.Run(ctx)
+
+	s := NewServer(proto, registry, exec)
 	logger := observability.NewNoOutLogger()
 
 	connection := &mockConnection{
@@ -81,26 +98,31 @@ func TestServer_HandlesCommandExecutionError(t *testing.T) {
 		dataWritten: []byte{},
 	}
 	msg := &protocol2.Message{}
-	protocol.EXPECT().CreateParser(connection).Return(parser)
+	proto.EXPECT().CreateParser(connection).Return(parser)
 	parser.EXPECT().Parse().Return(msg, nil)
 	registry.EXPECT().Parse(gomock.Any()).Return(cmd, nil)
 	cmd.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(resp)
-	protocol.EXPECT().SerializeError(gomock.Any()).Return([]byte("-command Execution fail\r\n"))
+	proto.EXPECT().SerializeError(gomock.Any()).Return([]byte("-command Execution fail\r\n"))
 
-	server.Serve(connection, logger)
+	s.Serve(connection, logger)
 	assert.Equal(t, "-command Execution fail\r\n", string(connection.dataWritten))
 }
 
 func TestServer_HandlesCommandExecutionSuccess(t *testing.T) {
 	controller := gomock.NewController(t)
-	protocol := mockprotocol.NewMockProtocol(controller)
+	proto := mockprotocol.NewMockProtocol(controller)
 	registry := mockcommand.NewMockParserRegistry(controller)
-	storage := mocksstorage.NewMockStorage(controller)
+	store := mocksstorage.NewMockStorage(controller)
 	cmd := mockcommand.NewMockCommand(controller)
 	resp := protocol2.NewSuccessResponse(protocol2.NewStringProtocolValue("OK"))
 	parser := mockprotocol.NewMockParser(controller)
 
-	server := NewServer(protocol, registry, storage)
+	exec := executor.New(store)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go exec.Run(ctx)
+
+	s := NewServer(proto, registry, exec)
 	logger := observability.NewNoOutLogger()
 
 	connection := &mockConnection{
@@ -109,14 +131,14 @@ func TestServer_HandlesCommandExecutionSuccess(t *testing.T) {
 		dataWritten: []byte{},
 	}
 	msg := &protocol2.Message{}
-	protocol.EXPECT().CreateParser(connection).Return(parser)
+	proto.EXPECT().CreateParser(connection).Return(parser)
 	parser.EXPECT().Parse().Return(msg, nil)
 	registry.EXPECT().Parse(gomock.Any()).Return(cmd, nil)
 	cmd.EXPECT().Execute(gomock.Any(), gomock.Any()).Return(resp)
-	protocol.EXPECT().Serialize(gomock.Any()).Return([]byte("-command success\r\n"), nil)
+	proto.EXPECT().Serialize(gomock.Any()).Return([]byte("-command success\r\n"), nil)
 	parser.EXPECT().Parse().Return(nil, io.EOF)
 
-	server.Serve(connection, logger)
+	s.Serve(connection, logger)
 	assert.Equal(t, "-command success\r\n", string(connection.dataWritten))
 }
 
