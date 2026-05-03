@@ -15,11 +15,12 @@ Runs comprehensive performance benchmarks comparing avacado against Redis server
 
 This skill automates the performance benchmarking process by:
 1. Starting avacado server on a test port
-2. Running redis-benchmark against avacado
-3. Running redis-benchmark against Redis server
-4. Comparing the results
-5. Generating a comprehensive findings report
-6. Cleaning up (stopping avacado server)
+2. Auto-detecting all commands supported by avacado from source
+3. Intersecting with commands redis-benchmark can test
+4. Running redis-benchmark against avacado and Redis using those commands
+5. Comparing the results
+6. Generating a comprehensive findings report
+7. Cleaning up (stopping avacado server)
 
 ## Process
 
@@ -47,7 +48,7 @@ This skill automates the performance benchmarking process by:
 ### Step 2: Parse Arguments
 
 Parse optional arguments from the user:
-- `--commands` or `-t`: Commands to benchmark (default: `set,get`)
+- `--commands` or `-t`: Commands to benchmark. **If not provided, auto-detect (see Step 3).**
   - Examples: `set,get`, `incr,decr`, `set,get,incr,decr,del,exists`
 - `--clients` or `-c`: Number of concurrent clients (default: `50`)
   - Suggested values: 1, 10, 50, 100, 500, 1000
@@ -58,7 +59,50 @@ Parse optional arguments from the user:
 - `--port`: Port for avacado server (default: `6380`)
 - `--redis-port`: Port for Redis server (default: `6379`)
 
-### Step 3: Start Avacado Server
+### Step 3: Auto-Detect Supported Commands
+
+**Skip this step if the user passed `--commands`.**
+
+This step determines which commands to benchmark by reading avacado's source and intersecting with what redis-benchmark can test.
+
+#### 3a. Extract avacado's registered commands from source
+
+Run this grep to get every command name returned by a `Name()` method in the command packages:
+
+```bash
+grep -rh 'return "[A-Z]*"' internal/command/ --include='*.go' | grep -v mock | grep -oE '"[A-Z]+"' | tr -d '"' | sort -u
+```
+
+This produces the full list of commands avacado supports (e.g., SET, GET, INCR, LPUSH, LRANGE, HSET, PING, etc.).
+
+#### 3b. Intersect with redis-benchmark's supported tests
+
+`redis-benchmark -t` accepts these test names (case-insensitive):
+
+```
+ping, set, get, incr, lpush, rpush, lpop, rpop, sadd, hset, spop, zadd, zpopmin, lrange, mset, xadd
+```
+
+Build the intersection: keep only commands from 3a that appear in the above list. Convert to lowercase and join with commas for use as the `-t` argument.
+
+**Example:** If avacado supports SET, GET, INCR, LPUSH, RPUSH, LPOP, RPOP, HSET, LRANGE, PING, DEL, EXISTS, DECR, TTL, BLPOP — the intersection is:
+
+```
+ping,set,get,incr,lpush,rpush,lpop,rpop,hset,lrange
+```
+
+(DEL, EXISTS, DECR, TTL, BLPOP, etc. are not in redis-benchmark's test suite so they are excluded.)
+
+#### 3c. Display detected commands to user
+
+Before running benchmarks, print:
+```
+Detected avacado commands:  SET, GET, INCR, LPUSH, RPUSH, LPOP, RPOP, HSET, LRANGE, PING, DEL, EXISTS, ...
+redis-benchmark compatible: ping, set, get, incr, lpush, rpush, lpop, rpop, hset, lrange
+Benchmarking:               ping,set,get,incr,lpush,rpush,lpop,rpop,hset,lrange
+```
+
+### Step 4: Start Avacado Server
 
 1. **Start avacado in background**
    ```bash
@@ -82,9 +126,9 @@ Parse optional arguments from the user:
    - Ensure avacado is responding
    - If connection fails, check server logs
 
-### Step 4: Run Benchmarks
+### Step 5: Run Benchmarks
 
-Run benchmarks in parallel for both servers:
+Run benchmarks in parallel for both servers using the command list from Step 3 (or user-supplied `--commands`):
 
 1. **Benchmark Avacado**
    ```bash
@@ -102,7 +146,7 @@ Run benchmarks in parallel for both servers:
 - Min/Max/Average latency
 - All data from CSV output
 
-### Step 5: Parse and Compare Results
+### Step 6: Parse and Compare Results
 
 1. **Parse CSV output** from both benchmarks
    - Extract metrics for each command
@@ -114,12 +158,12 @@ Run benchmarks in parallel for both servers:
    - Identify strengths and weaknesses
 
 3. **Categorize performance**
-   - **Excellent:** 80-100% of Redis
+   - **Excellent:** 80-100%+ of Redis
    - **Good:** 60-80% of Redis
    - **Acceptable:** 50-60% of Redis
    - **Needs Work:** < 50% of Redis
 
-### Step 6: Generate Report
+### Step 7: Generate Report
 
 Create a comprehensive markdown report in `benchmarks/redis_benchmark/`:
 
@@ -128,7 +172,7 @@ Create a comprehensive markdown report in `benchmarks/redis_benchmark/`:
 **Report sections:**
 1. **Test Configuration**
    - Date and time
-   - Commands tested
+   - Commands tested (and how they were determined: auto-detected vs user-supplied)
    - Number of requests, clients, data size
    - Platform information
 
@@ -155,8 +199,9 @@ Create a comprehensive markdown report in `benchmarks/redis_benchmark/`:
 6. **Raw Data**
    - Complete CSV output from both benchmarks
    - Commands used to reproduce
+   - The grep command used to detect avacado's commands
 
-### Step 7: Update Findings Document
+### Step 8: Update Findings Document
 
 If `benchmarks/BENCHMARK_FINDINGS.md` exists:
 - Update the "Last Updated" date
@@ -167,7 +212,7 @@ If running follow-up benchmarks after optimizations:
 - Add a comparison section showing improvement
 - Update optimization roadmap status
 
-### Step 8: Cleanup
+### Step 9: Cleanup
 
 1. **Stop avacado server**
    ```bash
@@ -195,8 +240,12 @@ If running follow-up benchmarks after optimizations:
 ║           Avacado vs Redis Benchmark Results                 ║
 ╚══════════════════════════════════════════════════════════════╝
 
+Detected avacado commands:  SET, GET, INCR, LPUSH, RPUSH, LPOP, RPOP, HSET, LRANGE, PING, ...
+redis-benchmark compatible: ping, set, get, incr, lpush, rpush, lpop, rpop, hset, lrange
+Benchmarking:               ping,set,get,incr,lpush,rpush,lpop,rpop,hset,lrange
+
 Configuration:
-  • Commands: SET, GET
+  • Commands: PING, SET, GET, INCR, LPUSH, RPUSH, LPOP, RPOP, HSET, LRANGE
   • Requests: 100,000 per command
   • Clients: 50 concurrent
   • Data Size: 3 bytes
@@ -204,26 +253,26 @@ Configuration:
 Results:
 
   SET Command:
-    Avacado:  117,786 req/s | p50: 0.239ms | p99: 0.687ms
-    Redis:    189,036 req/s | p50: 0.135ms | p99: 0.639ms
-    Ratio:    62.3% ⚠️
+    Avacado:  85,910 req/s | p50: 0.559ms | p99: 0.791ms
+    Redis:    78,740 req/s | p50: 0.591ms | p99: 1.063ms
+    Ratio:    109.1% ✅
 
   GET Command:
-    Avacado:  118,765 req/s | p50: 0.239ms | p99: 0.327ms
-    Redis:    182,815 req/s | p50: 0.135ms | p99: 0.359ms
-    Ratio:    65.0% ✓
+    Avacado:  85,397 req/s | p50: 0.567ms | p99: 0.767ms
+    Redis:    86,655 req/s | p50: 0.591ms | p99: 0.791ms
+    Ratio:    98.5% ✅
 
-Overall Performance: Acceptable (63.6% of Redis)
+  ... (one block per benchmarked command)
+
+Overall Performance: Excellent (avg XX% of Redis)
 
 ✅ Strengths:
-  • Excellent tail latency (GET p95 matches Redis)
-  • Production-ready throughput (>100K ops/sec)
+  • ...
 
 ⚠️  Areas for Improvement:
-  • Median latency 77% slower than Redis
-  • Hot path optimization needed
+  • ...
 
-📊 Detailed report: benchmarks/redis_benchmark/comparison_20260209_143025.md
+📊 Detailed report: benchmarks/redis_benchmark/comparison_YYYYMMDD_HHMMSS.md
 ```
 
 ### Report File
@@ -258,12 +307,12 @@ Runs benchmarks with varying data sizes (10B, 100B, 1KB, 10KB) to measure serial
 ```
 Tests with different pipeline sizes (-P flag) to measure batching efficiency.
 
-### Custom Benchmark
+### Custom Benchmark (override auto-detection)
 
 ```
 /benchmark --commands lpush,rpush,lrange --clients 100 --requests 500000
 ```
-Run benchmarks for specific commands with custom parameters.
+Run benchmarks for a specific subset of commands, bypassing auto-detection.
 
 ## Performance Goals Reference
 
@@ -281,6 +330,7 @@ From `BENCHMARKING_GUIDE.md`:
 - Document system configuration (OS, Go version, CPU, RAM)
 - Keep benchmark history for regression detection
 - Warm up the system before measurements (first few requests)
+- The auto-detected command list will grow automatically as new commands are added to `internal/command/registry/registry.go`
 
 ## Error Handling
 
@@ -289,52 +339,53 @@ From `BENCHMARKING_GUIDE.md`:
 - If avacado fails to start, check logs and display error
 - If benchmarks fail, provide troubleshooting steps
 - Handle timeout scenarios gracefully
+- If grep finds no commands (e.g., source structure changed), fall back to `set,get` and warn the user
 
 ## Examples
 
-### Basic benchmark (default settings)
+### Basic benchmark (auto-detects all supported commands)
 ```
 /benchmark
 ```
-Runs SET and GET with 100K requests, 50 clients
+Greps source, finds intersection with redis-benchmark, runs all supported commands.
 
 ### High concurrency test
 ```
 /benchmark --clients 500 --requests 1000000
 ```
-Stress test with 500 concurrent clients
+Stress test with 500 concurrent clients across all auto-detected commands.
 
-### Multiple commands
+### Override with specific commands
 ```
-/benchmark --commands set,get,incr,decr,del,exists
+/benchmark --commands set,get,incr
 ```
-Comprehensive command benchmark
+Bypasses auto-detection and benchmarks only these three commands.
 
 ### Large value test
 ```
-/benchmark --data-size 10000 --commands set,get
+/benchmark --data-size 10000
 ```
-Test with 10KB values
+Tests with 10KB values across all auto-detected commands.
 
 ## Integration with Development Workflow
 
-### After implementing new features
+### After implementing new commands
 ```
 /benchmark
 ```
-Validate that performance hasn't regressed
+Auto-detection picks up the new command automatically — no skill update needed.
 
 ### After optimization work
 ```
 /benchmark --commands <optimized-commands>
 ```
-Measure improvement and update findings
+Measure improvement on specific commands and update findings.
 
 ### Before releasing
 ```
 /benchmark --test-type concurrency-scaling
 ```
-Ensure scalability meets requirements
+Ensure scalability meets requirements across all supported commands.
 
 ## Files Modified/Created
 
