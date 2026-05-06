@@ -9,4 +9,5 @@ type HashMaps interface {
 	HGetAll(ctx context.Context, name string) (map[string]string, error)
 	HDel(ctx context.Context, key string, fields []string) (int, error)
 	HExists(ctx context.Context, key string, field string) int
+	HIncrBy(ctx context.Context, key string, field string, increment int64) (int64, error)
 }

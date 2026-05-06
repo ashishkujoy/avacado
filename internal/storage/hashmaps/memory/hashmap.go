@@ -2,6 +2,7 @@ package memory
 
 import (
 	"avacado/internal/storage/listpack"
+	"fmt"
 	"strconv"
 )
 
@@ -105,6 +106,46 @@ func (h *HashMap) Delete(fields []string) int {
 		}
 	}
 	return currentSize - h.size()
+}
+
+func (h *HashMap) IncrBy(field string, increment int64) (int64, error) {
+	currentValue := int64(0)
+
+	if h.encoding == hashEncoding {
+		if val, exists := h.hash[field]; exists {
+			v, err := strconv.ParseInt(val, 10, 64)
+			if err != nil {
+				return 0, fmt.Errorf("hash value is not an integer or out of range")
+			}
+			currentValue = v
+		}
+	} else {
+		if val, found := h.Get(field); found {
+			v, err := strconv.ParseInt(string(val), 10, 64)
+			if err != nil {
+				return 0, fmt.Errorf("hash value is not an integer or out of range")
+			}
+			currentValue = v
+		}
+	}
+
+	if increment > 0 && currentValue > 9223372036854775807-increment {
+		return 0, fmt.Errorf("increment or decrement would overflow")
+	}
+	if increment < 0 && currentValue < -9223372036854775808-increment {
+		return 0, fmt.Errorf("increment or decrement would overflow")
+	}
+
+	newValue := currentValue + increment
+	newValueStr := strconv.FormatInt(newValue, 10)
+
+	if h.encoding == hashEncoding {
+		h.hash[field] = newValueStr
+	} else {
+		h.setInListPack(field, newValueStr)
+	}
+
+	return newValue, nil
 }
 
 func (h *HashMap) setInListPack(key, value string) {

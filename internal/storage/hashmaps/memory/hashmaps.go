@@ -71,3 +71,12 @@ func (h *HashMaps) HDel(_ context.Context, key string, fields []string) (int, er
 	}
 	return hMap.Delete(fields), nil
 }
+
+func (h *HashMaps) HIncrBy(_ context.Context, key string, field string, increment int64) (int64, error) {
+	hMap, found := h.maps[key]
+	if !found {
+		hMap = NewHashMap()
+		h.maps[key] = hMap
+	}
+	return hMap.IncrBy(field, increment)
+}

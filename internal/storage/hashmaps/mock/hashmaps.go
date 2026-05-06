@@ -99,6 +99,21 @@ func (mr *MockHashMapsMockRecorder) HGetAll(ctx, name any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HGetAll", reflect.TypeOf((*MockHashMaps)(nil).HGetAll), ctx, name)
 }
 
+// HIncrBy mocks base method.
+func (m *MockHashMaps) HIncrBy(ctx context.Context, key, field string, increment int64) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HIncrBy", ctx, key, field, increment)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HIncrBy indicates an expected call of HIncrBy.
+func (mr *MockHashMapsMockRecorder) HIncrBy(ctx, key, field, increment any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HIncrBy", reflect.TypeOf((*MockHashMaps)(nil).HIncrBy), ctx, key, field, increment)
+}
+
 // HSet mocks base method.
 func (m *MockHashMaps) HSet(ctx context.Context, name string, keyValues []string) int {
 	m.ctrl.T.Helper()
