@@ -72,6 +72,20 @@ func (h *HashMaps) HDel(_ context.Context, key string, fields []string) (int, er
 	return hMap.Delete(fields), nil
 }
 
+func (h *HashMaps) HMGet(_ context.Context, key string, fields []string) []any {
+	result := make([]any, len(fields))
+	hMap, found := h.maps[key]
+	if !found {
+		return result
+	}
+	for i, field := range fields {
+		if value, ok := hMap.Get(field); ok {
+			result[i] = value
+		}
+	}
+	return result
+}
+
 func (h *HashMaps) HIncrBy(_ context.Context, key string, field string, increment int64) (int64, error) {
 	hMap, found := h.maps[key]
 	if !found {

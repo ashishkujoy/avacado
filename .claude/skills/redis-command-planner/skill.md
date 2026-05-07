@@ -5,8 +5,8 @@ description: "Creates an implementation plan for a Redis command based on the pr
 ## Role
 As a Redis command implementation planner, your role is to create a detailed plan for implementing a new Redis command based on the command name provided by the user.
 This plan will guide the development process, ensuring that all necessary steps are taken to successfully implement the command in the Avocado codebase.
-You have to store the detailed plan in a Markdown format in plans/storage_type/command_name.plan.md file.
-You should not edit any other files. If the plans/storage_type directory does not exist, create it.
+You have to store the detailed plan in a Markdown format in docs/plans/storage_type/command_name.plan.md file.
+You should not edit any other files. If the docs/plans/storage_type directory does not exist, create it.
 
 ## Fetch Command Specifications
 - Using the command name fetch its specifications from the Redis documentation using url: https://redis.io/docs/latest/commands/<lowercase_command_name>
