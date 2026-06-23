@@ -370,6 +370,49 @@ func TestKVMemoryStore_SetWithIFEQExpiredKey(t *testing.T) {
 	assert.Nil(t, val)
 }
 
+func TestKVMemoryStore_Append(t *testing.T) {
+	store := NewKVMemoryStore()
+	ctx := context.Background()
+
+	// Append to absent key creates it
+	n, err := store.Append(ctx, "key1", []byte("Hello"))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(5), n)
+	v, _ := store.Get(ctx, "key1")
+	assert.Equal(t, "Hello", string(v))
+
+	// Append to existing key accumulates
+	n, err = store.Append(ctx, "key1", []byte(" World"))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(11), n)
+	v, _ = store.Get(ctx, "key1")
+	assert.Equal(t, "Hello World", string(v))
+
+	// Append to integer-encoded key works
+	_, _ = store.Set(ctx, "num", []byte("10"), kv.NewSetOptions())
+	n, err = store.Append(ctx, "num", []byte(" items"))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(8), n)
+	v, _ = store.Get(ctx, "num")
+	assert.Equal(t, "10 items", string(v))
+
+	// TTL is preserved after append
+	futureTime := time.Now().Add(10 * time.Second)
+	store.store["ttlkey"] = &value{data: []byte("hi"), enc: encodingString, expiry: &futureTime}
+	n, err = store.Append(ctx, "ttlkey", []byte("!"))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), n)
+	assert.NotNil(t, store.store["ttlkey"].expiry)
+
+	// Append to expired key treats it as new (no TTL)
+	pastTime := time.Now().Add(-2 * time.Second)
+	store.store["expired"] = &value{data: []byte("old"), enc: encodingString, expiry: &pastTime}
+	n, err = store.Append(ctx, "expired", []byte("new"))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), n)
+	assert.Nil(t, store.store["expired"].expiry)
+}
+
 func TestKVMemoryStore_SetWithIFEQAndGet(t *testing.T) {
 	store := NewKVMemoryStore()
 	ctx := context.Background()

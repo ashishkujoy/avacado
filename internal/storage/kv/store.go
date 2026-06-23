@@ -63,4 +63,5 @@ type Store interface {
 	DecrBy(ctx context.Context, key string, decrement int64) (int64, error)
 	Del(ctx context.Context, keys ...string) (int64, error)
 	Exists(ctx context.Context, keys ...string) (int64, error)
+	Append(ctx context.Context, key string, value []byte) (int64, error)
 }

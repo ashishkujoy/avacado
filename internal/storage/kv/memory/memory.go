@@ -139,6 +139,18 @@ func (k *KVMemoryStore) Exists(ctx context.Context, keys ...string) (int64, erro
 	return existsCount, nil
 }
 
+func (k *KVMemoryStore) Append(_ context.Context, key string, data []byte) (int64, error) {
+	existing, ok := k.store[key]
+	if !ok || existing.isExpired() {
+		k.store[key] = &value{data: data, enc: encodingString}
+		return int64(len(data)), nil
+	}
+	current := existing.Bytes()
+	appended := append(current, data...)
+	k.store[key] = &value{data: appended, enc: encodingString, expiry: existing.expiry}
+	return int64(len(appended)), nil
+}
+
 func NewKVMemoryStore() *KVMemoryStore {
 	return &KVMemoryStore{
 		store: make(map[string]*value),

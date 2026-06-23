@@ -41,6 +41,21 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 	return m.recorder
 }
 
+// Append mocks base method.
+func (m *MockStore) Append(ctx context.Context, key string, value []byte) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Append", ctx, key, value)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Append indicates an expected call of Append.
+func (mr *MockStoreMockRecorder) Append(ctx, key, value any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Append", reflect.TypeOf((*MockStore)(nil).Append), ctx, key, value)
+}
+
 // Decr mocks base method.
 func (m *MockStore) Decr(ctx context.Context, key string) (int64, error) {
 	m.ctrl.T.Helper()
