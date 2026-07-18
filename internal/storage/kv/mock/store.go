@@ -171,6 +171,21 @@ func (mr *MockStoreMockRecorder) Incr(ctx, key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Incr", reflect.TypeOf((*MockStore)(nil).Incr), ctx, key)
 }
 
+// Len mocks base method.
+func (m *MockStore) Len(ctx context.Context, key string) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Len", ctx, key)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Len indicates an expected call of Len.
+func (mr *MockStoreMockRecorder) Len(ctx, key any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Len", reflect.TypeOf((*MockStore)(nil).Len), ctx, key)
+}
+
 // Set mocks base method.
 func (m *MockStore) Set(ctx context.Context, key string, value []byte, options *kv.SetOptions) ([]byte, error) {
 	m.ctrl.T.Helper()

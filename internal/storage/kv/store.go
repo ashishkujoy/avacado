@@ -64,4 +64,5 @@ type Store interface {
 	Del(ctx context.Context, keys ...string) (int64, error)
 	Exists(ctx context.Context, keys ...string) (int64, error)
 	Append(ctx context.Context, key string, value []byte) (int64, error)
+	Len(ctx context.Context, key string) (int64, error)
 }

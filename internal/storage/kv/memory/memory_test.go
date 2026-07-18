@@ -413,6 +413,37 @@ func TestKVMemoryStore_Append(t *testing.T) {
 	assert.Nil(t, store.store["expired"].expiry)
 }
 
+func TestKVMemoryStore_Len(t *testing.T) {
+	store := NewKVMemoryStore()
+	ctx := context.Background()
+
+	// Len of absent key is 0
+	n, err := store.Len(ctx, "missing")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), n)
+
+	// Len of existing string key
+	_, _ = store.Set(ctx, "key1", []byte("Hello World"), kv.NewSetOptions())
+	n, err = store.Len(ctx, "key1")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(11), n)
+
+	// Len of integer-encoded key
+	_, _ = store.Set(ctx, "num", []byte("12345"), kv.NewSetOptions())
+	n, err = store.Len(ctx, "num")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(5), n)
+
+	// Len of expired key is 0 and key is removed
+	pastTime := time.Now().Add(-2 * time.Second)
+	store.store["expired"] = &value{data: []byte("old"), enc: encodingString, expiry: &pastTime}
+	n, err = store.Len(ctx, "expired")
+	assert.NoError(t, err)
+	assert.Equal(t, int64(0), n)
+	_, stillPresent := store.store["expired"]
+	assert.False(t, stillPresent)
+}
+
 func TestKVMemoryStore_SetWithIFEQAndGet(t *testing.T) {
 	store := NewKVMemoryStore()
 	ctx := context.Background()

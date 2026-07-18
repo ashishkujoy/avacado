@@ -52,6 +52,10 @@ func (v *value) AsInt64() (int64, error) {
 	return strconv.ParseInt(string(v.data), 10, 64)
 }
 
+func (v *value) Len() int64 {
+	return int64(len(v.Bytes()))
+}
+
 func (v *value) Bytes() []byte {
 	if v.enc == encodingString {
 		return v.data
@@ -76,6 +80,12 @@ func (v *value) isExpired() bool {
 // All methods are called exclusively by the executor goroutine — no locking needed.
 type KVMemoryStore struct {
 	store map[string]*value
+}
+
+func NewKVMemoryStore() *KVMemoryStore {
+	return &KVMemoryStore{
+		store: make(map[string]*value),
+	}
 }
 
 func (k *KVMemoryStore) Incr(ctx context.Context, key string) (int64, error) {
@@ -151,12 +161,6 @@ func (k *KVMemoryStore) Append(_ context.Context, key string, data []byte) (int6
 	return int64(len(appended)), nil
 }
 
-func NewKVMemoryStore() *KVMemoryStore {
-	return &KVMemoryStore{
-		store: make(map[string]*value),
-	}
-}
-
 func (k *KVMemoryStore) Set(_ context.Context, key string, data []byte, options *kv.SetOptions) ([]byte, error) {
 	oldValue, keyAlreadyExists := k.store[key]
 
@@ -220,6 +224,18 @@ func (k *KVMemoryStore) GetTTL(key string) (int64, error) {
 	}
 	now := time.Now()
 	return v.expiry.UnixMilli() - now.UnixMilli(), nil
+}
+
+func (k *KVMemoryStore) Len(_ context.Context, key string) (int64, error) {
+	v, ok := k.store[key]
+	if !ok {
+		return 0, nil
+	}
+	if v.isExpired() {
+		delete(k.store, key)
+		return 0, nil
+	}
+	return v.Len(), nil
 }
 
 func NewKeyAlreadyExistsError(key string) error {
