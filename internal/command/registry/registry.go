@@ -36,6 +36,9 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 	registry.Register(kv.NewExistsParser())
 	registry.Register(kv.NewAppendParser())
 	registry.Register(kv.NewStrlenParser())
+	getRangeParser := kv.NewGetRangeParser()
+	registry.Register(getRangeParser)
+	registry.RegisterAlias("SUBSTR", getRangeParser)
 
 	registry.Register(list.NewLLenParser())
 	registry.Register(list.NewLPushParser())
@@ -62,6 +65,12 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 // Register registers a new parser
 func (d *DefaultParserRegistry) Register(parser command.Parser) {
 	d.parsers[strings.ToUpper(parser.Name())] = parser
+}
+
+// RegisterAlias registers an existing parser under an additional command name,
+// e.g. SUBSTR as an alias for GETRANGE.
+func (d *DefaultParserRegistry) RegisterAlias(name string, parser command.Parser) {
+	d.parsers[strings.ToUpper(name)] = parser
 }
 
 // Parse parses a raw message to a redis command

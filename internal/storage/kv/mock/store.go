@@ -141,6 +141,21 @@ func (mr *MockStoreMockRecorder) Get(ctx, key any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStore)(nil).Get), ctx, key)
 }
 
+// GetRange mocks base method.
+func (m *MockStore) GetRange(ctx context.Context, key string, start, end int64) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRange", ctx, key, start, end)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRange indicates an expected call of GetRange.
+func (mr *MockStoreMockRecorder) GetRange(ctx, key, start, end any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRange", reflect.TypeOf((*MockStore)(nil).GetRange), ctx, key, start, end)
+}
+
 // GetTTL mocks base method.
 func (m *MockStore) GetTTL(key string) (int64, error) {
 	m.ctrl.T.Helper()

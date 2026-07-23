@@ -460,3 +460,62 @@ func TestKVMemoryStore_SetWithIFEQAndGet(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, []byte("newvalue"), val)
 }
+
+func TestKVMemoryStore_GetRange(t *testing.T) {
+	store := NewKVMemoryStore()
+	ctx := context.Background()
+
+	// GetRange of non-existent key returns empty
+	v, err := store.GetRange(ctx, "missing", 0, -1)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte{}, v)
+
+	_, err = store.Set(ctx, "key1", []byte("Hello World"), kv.NewSetOptions())
+	assert.NoError(t, err)
+
+	// Positive in-bounds range
+	v, err = store.GetRange(ctx, "key1", 0, 4)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("Hello"), v)
+
+	// Full string via 0,-1
+	v, err = store.GetRange(ctx, "key1", 0, -1)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("Hello World"), v)
+
+	// Negative start and end
+	v, err = store.GetRange(ctx, "key1", -5, -1)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("World"), v)
+
+	// End beyond string length clamps to last char
+	v, err = store.GetRange(ctx, "key1", 10, 100)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("d"), v)
+
+	// Start beyond end after clamping returns empty
+	v, err = store.GetRange(ctx, "key1", 50, 100)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte{}, v)
+
+	// Deeply negative indices clamp start to 0
+	v, err = store.GetRange(ctx, "key1", -100, -1)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("Hello World"), v)
+
+	// Integer-encoded value
+	_, err = store.Set(ctx, "num", []byte("12345"), kv.NewSetOptions())
+	assert.NoError(t, err)
+	v, err = store.GetRange(ctx, "num", 1, 3)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("234"), v)
+
+	// Expired key is treated as non-existent and evicted
+	pastTime := time.Now().Add(-2 * time.Second)
+	store.store["expired"] = &value{data: []byte("old"), enc: encodingString, expiry: &pastTime}
+	v, err = store.GetRange(ctx, "expired", 0, -1)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte{}, v)
+	_, stillPresent := store.store["expired"]
+	assert.False(t, stillPresent)
+}

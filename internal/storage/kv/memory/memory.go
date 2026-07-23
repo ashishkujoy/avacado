@@ -238,6 +238,47 @@ func (k *KVMemoryStore) Len(_ context.Context, key string) (int64, error) {
 	return v.Len(), nil
 }
 
+// GetRange returns the substring of the value stored at key between start and end (inclusive),
+// following Redis's GETRANGE semantics: negative offsets count from the end of the string,
+// out-of-range offsets are clamped, and a missing key or empty/invalid range yields an empty slice.
+func (k *KVMemoryStore) GetRange(_ context.Context, key string, start, end int64) ([]byte, error) {
+	v, ok := k.store[key]
+	if !ok {
+		return []byte{}, nil
+	}
+	if v.isExpired() {
+		delete(k.store, key)
+		return []byte{}, nil
+	}
+
+	data := v.Bytes()
+	strlen := int64(len(data))
+	if strlen == 0 {
+		return []byte{}, nil
+	}
+
+	if start < 0 {
+		start += strlen
+	}
+	if end < 0 {
+		end += strlen
+	}
+	if start < 0 {
+		start = 0
+	}
+	if end < 0 {
+		end = 0
+	}
+	if end >= strlen {
+		end = strlen - 1
+	}
+	if start > end {
+		return []byte{}, nil
+	}
+
+	return data[start : end+1], nil
+}
+
 func NewKeyAlreadyExistsError(key string) error {
 	return fmt.Errorf("set operation failed: key = %s, %s", key, kv.KeyAlreadyExistsErrorType)
 }
