@@ -4,6 +4,7 @@ import (
 	"avacado/internal/protocol"
 	mockkv "avacado/internal/storage/kv/mock"
 	mocksstorage "avacado/internal/storage/mock"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,7 +30,7 @@ func TestStrlen_Execute(t *testing.T) {
 	store.EXPECT().Len(gomock.Any(), "mykey").Return(int64(5), nil)
 
 	cmd := &Strlen{Key: "mykey"}
-	resp := cmd.Execute(nil, storage)
+	resp := cmd.Execute(context.TODO(), storage)
 	assert.Equal(t, protocol.NewNumberResponse(5), resp)
 }
 
@@ -42,6 +43,6 @@ func TestStrlen_ExecuteHandlesError(t *testing.T) {
 	store.EXPECT().Len(gomock.Any(), "mykey").Return(int64(0), assert.AnError)
 
 	cmd := &Strlen{Key: "mykey"}
-	resp := cmd.Execute(nil, storage)
+	resp := cmd.Execute(context.TODO(), storage)
 	assert.Equal(t, protocol.NewErrorResponse(assert.AnError), resp)
 }

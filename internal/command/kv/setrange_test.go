@@ -5,6 +5,7 @@ import (
 	"avacado/internal/protocol"
 	mockkv "avacado/internal/storage/kv/mock"
 	mocksstorage "avacado/internal/storage/mock"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -51,7 +52,7 @@ func TestSetRange_Execute(t *testing.T) {
 	store.EXPECT().SetRange(gomock.Any(), "mykey", 6, []byte("Redis")).Return(11, nil)
 
 	cmd := &SetRange{Key: "mykey", Offset: 6, Value: []byte("Redis")}
-	resp := cmd.Execute(nil, storage)
+	resp := cmd.Execute(context.TODO(), storage)
 	assert.Equal(t, protocol.NewNumberResponse(11), resp)
 }
 
@@ -64,6 +65,6 @@ func TestSetRange_ExecuteHandlesError(t *testing.T) {
 	store.EXPECT().SetRange(gomock.Any(), "mykey", 6, []byte("Redis")).Return(0, assert.AnError)
 
 	cmd := &SetRange{Key: "mykey", Offset: 6, Value: []byte("Redis")}
-	resp := cmd.Execute(nil, storage)
+	resp := cmd.Execute(context.TODO(), storage)
 	assert.Equal(t, protocol.NewErrorResponse(assert.AnError), resp)
 }

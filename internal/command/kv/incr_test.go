@@ -4,6 +4,7 @@ import (
 	"avacado/internal/protocol"
 	mockkv "avacado/internal/storage/kv/mock"
 	mocksstorage "avacado/internal/storage/mock"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,7 @@ func TestIncr_Execute(t *testing.T) {
 	store.EXPECT().Incr(gomock.Any(), "key").Return(int64(1), nil)
 
 	cmd := &Incr{Key: "key"}
-	resp := cmd.Execute(nil, storage)
+	resp := cmd.Execute(context.TODO(), storage)
 	assert.Equal(t, protocol.NewNumberResponse(1), resp)
 }
 
@@ -41,6 +42,6 @@ func TestIncr_ExecuteHandlesError(t *testing.T) {
 	store.EXPECT().Incr(gomock.Any(), "key").Return(int64(0), assert.AnError)
 
 	cmd := &Incr{Key: "key"}
-	resp := cmd.Execute(nil, storage)
+	resp := cmd.Execute(context.TODO(), storage)
 	assert.Equal(t, protocol.NewErrorResponse(assert.AnError), resp)
 }

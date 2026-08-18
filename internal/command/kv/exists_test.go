@@ -4,6 +4,7 @@ import (
 	"avacado/internal/protocol"
 	mockkv "avacado/internal/storage/kv/mock"
 	mocksstorage "avacado/internal/storage/mock"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -41,7 +42,7 @@ func TestExists_Execute(t *testing.T) {
 	store.EXPECT().Exists(gomock.Any(), "key1", "key2").Return(int64(2), nil)
 
 	cmd := &Exists{Keys: []string{"key1", "key2"}}
-	resp := cmd.Execute(nil, storage)
+	resp := cmd.Execute(context.TODO(), storage)
 	assert.Equal(t, protocol.NewNumberResponse(2), resp)
 }
 
@@ -54,6 +55,6 @@ func TestExists_ExecuteHandlesError(t *testing.T) {
 	store.EXPECT().Exists(gomock.Any(), "key1").Return(int64(0), assert.AnError)
 
 	cmd := &Exists{Keys: []string{"key1"}}
-	resp := cmd.Execute(nil, storage)
+	resp := cmd.Execute(context.TODO(), storage)
 	assert.Equal(t, protocol.NewErrorResponse(assert.AnError), resp)
 }

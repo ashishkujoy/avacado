@@ -5,6 +5,7 @@ import (
 	"avacado/internal/protocol"
 	mockkv "avacado/internal/storage/kv/mock"
 	mocksstorage "avacado/internal/storage/mock"
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,7 +60,7 @@ func TestGetRange_Execute(t *testing.T) {
 	store.EXPECT().GetRange(gomock.Any(), "mykey", int64(0), int64(4)).Return([]byte("Hello"), nil)
 
 	cmd := &GetRange{Key: "mykey", Start: 0, End: 4}
-	resp := cmd.Execute(nil, storage)
+	resp := cmd.Execute(context.TODO(), storage)
 	assert.Equal(t, protocol.NewBulkStringResponse([]byte("Hello")), resp)
 }
 
@@ -72,6 +73,6 @@ func TestGetRange_ExecuteHandlesError(t *testing.T) {
 	store.EXPECT().GetRange(gomock.Any(), "mykey", int64(0), int64(4)).Return(nil, assert.AnError)
 
 	cmd := &GetRange{Key: "mykey", Start: 0, End: 4}
-	resp := cmd.Execute(nil, storage)
+	resp := cmd.Execute(context.TODO(), storage)
 	assert.Equal(t, protocol.NewErrorResponse(assert.AnError), resp)
 }
