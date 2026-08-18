@@ -83,4 +83,3 @@ func TestHGet_GetMultipleFieldsFromSameHash(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "v3", val3)
 }
-

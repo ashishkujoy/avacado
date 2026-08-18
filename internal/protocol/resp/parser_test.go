@@ -48,9 +48,9 @@ func TestParser_ParseArray(t *testing.T) {
 
 func TestParser_RejectsUnsupportedTypes(t *testing.T) {
 	unsupported := []string{
-		"+OK\r\n",          // simple string
-		"-Error\r\n",       // error
-		":123\r\n",         // integer
+		"+OK\r\n",                          // simple string
+		"-Error\r\n",                       // error
+		":123\r\n",                         // integer
 		"%1\r\n$3\r\nkey\r\n$3\r\nval\r\n", // map
 	}
 	for _, input := range unsupported {

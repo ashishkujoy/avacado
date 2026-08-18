@@ -89,4 +89,3 @@ func TestHGetAll_MultipleFields(t *testing.T) {
 		"f4": "v4",
 	}, result)
 }
-
