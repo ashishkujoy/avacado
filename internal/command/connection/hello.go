@@ -16,7 +16,7 @@ type Hello struct {
 }
 
 func (h *Hello) Execute(ctx context.Context, storage storage.Storage) *protocol.Response {
-	clientConfig := ctx.Value("clientConfig")
+	clientConfig := ctx.Value(config.ClientConfigKey)
 	if clientConfig == nil {
 		fmt.Printf("missing client config")
 		return protocol.NewErrorResponse(errors.New("internal server error"))

@@ -14,11 +14,11 @@ import (
 )
 
 func proto2Ctx() context.Context {
-	return context.WithValue(context.Background(), "clientConfig", config.DefaultClientConfig())
+	return context.WithValue(context.Background(), config.ClientConfigKey, config.DefaultClientConfig())
 }
 
 func proto3Ctx() context.Context {
-	return context.WithValue(context.Background(), "clientConfig", &config.ClientConfig{ProtocolVersion: 3})
+	return context.WithValue(context.Background(), config.ClientConfigKey, &config.ClientConfig{ProtocolVersion: 3})
 }
 
 func TestHGetAllCommand_Execute(t *testing.T) {

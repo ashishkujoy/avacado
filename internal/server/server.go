@@ -38,7 +38,7 @@ type Connection interface {
 
 func (s *Server) Serve(conn Connection, logger *slog.Logger) error {
 	clientConfig := config.DefaultClientConfig()
-	ctx := context.WithValue(context.Background(), "clientConfig", clientConfig)
+	ctx := context.WithValue(context.Background(), config.ClientConfigKey, clientConfig)
 	defer func() {
 		logger.Info("closing connection")
 		conn.Close()

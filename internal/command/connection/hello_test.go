@@ -14,7 +14,7 @@ import (
 func TestHelloCommand_Execute(t *testing.T) {
 	controller := gomock.NewController(t)
 	command := Hello{Proto: 3}
-	ctx := context.WithValue(context.Background(), "clientConfig", config.DefaultClientConfig())
+	ctx := context.WithValue(context.Background(), config.ClientConfigKey, config.DefaultClientConfig())
 
 	storage := mocksstorage.NewMockStorage(controller)
 
