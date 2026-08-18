@@ -519,3 +519,76 @@ func TestKVMemoryStore_GetRange(t *testing.T) {
 	_, stillPresent := store.store["expired"]
 	assert.False(t, stillPresent)
 }
+
+func TestKVMemoryStore_SetRange(t *testing.T) {
+	store := NewKVMemoryStore()
+	ctx := context.Background()
+
+	// Non-existing key is treated as empty string.
+	n, err := store.SetRange(ctx, "key1", 0, []byte("Hello"))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(5), n)
+	v, err := store.Get(ctx, "key1")
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("Hello"), v)
+
+	// Existing key is overwritten from offset for the full value length.
+	n, err = store.SetRange(ctx, "key1", 6, []byte("Redis"))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(11), n)
+	v, err = store.Get(ctx, "key1")
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("Hello\x00Redis"), v)
+
+	// Offset beyond current length zero-pads the gap.
+	n, err = store.SetRange(ctx, "key2", 6, []byte("Redis"))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(11), n)
+	v, err = store.Get(ctx, "key2")
+	assert.NoError(t, err)
+	expected := append(make([]byte, 6), []byte("Redis")...)
+	assert.Equal(t, expected, v)
+
+	// Writing past current end grows the string.
+	_, err = store.Set(ctx, "key3", []byte("Hello"), kv.NewSetOptions())
+	assert.NoError(t, err)
+	n, err = store.SetRange(ctx, "key3", 4, []byte("12345"))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(9), n)
+	v, err = store.Get(ctx, "key3")
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("Hell12345"), v)
+
+	// Integer-encoded values are treated like normal strings.
+	_, err = store.Set(ctx, "num", []byte("10"), kv.NewSetOptions())
+	assert.NoError(t, err)
+	n, err = store.SetRange(ctx, "num", 1, []byte("234"))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(4), n)
+	v, err = store.Get(ctx, "num")
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("1234"), v)
+
+	// Empty value is a no-op and returns current string length.
+	_, err = store.Set(ctx, "key4", []byte("abc"), kv.NewSetOptions())
+	assert.NoError(t, err)
+	n, err = store.SetRange(ctx, "key4", 1, []byte{})
+	assert.NoError(t, err)
+	assert.Equal(t, int64(3), n)
+	v, err = store.Get(ctx, "key4")
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("abc"), v)
+
+	// Existing but expired key is treated as non-existent (empty string).
+	_, err = store.Set(ctx, "expired", []byte("oldvalue"), kv.NewSetOptions().WithEX(1))
+	assert.NoError(t, err)
+	pastTime := time.Now().Add(-2 * time.Second)
+	store.store["expired"].expiry = &pastTime
+
+	n, err = store.SetRange(ctx, "expired", 0, []byte("Hello"))
+	assert.NoError(t, err)
+	assert.Equal(t, int64(5), n)
+	v, err = store.Get(ctx, "expired")
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("Hello"), v)
+}

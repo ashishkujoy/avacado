@@ -279,6 +279,32 @@ func (k *KVMemoryStore) GetRange(_ context.Context, key string, start, end int64
 	return data[start : end+1], nil
 }
 
+func setRange(innerValue *value, start int, newValue []byte) {
+	innerBytes := innerValue.Bytes()
+	requiredLen := start + len(newValue)
+	if len(innerBytes) < requiredLen {
+		innerBytes = append(innerBytes, make([]byte, requiredLen-len(innerBytes))...)
+	}
+	copy(innerBytes[start:], newValue)
+	innerValue.enc = encodingString
+	innerValue.data = innerBytes
+}
+
+func (k *KVMemoryStore) SetRange(
+	_ context.Context,
+	key string,
+	start int64,
+	value []byte,
+) (int64, error) {
+	v, ok := k.store[key]
+	if !ok || v.isExpired() {
+		v = newValue([]byte{}, nil)
+		k.store[key] = v
+	}
+	setRange(v, int(start), value)
+	return int64(len(v.Bytes())), nil
+}
+
 func NewKeyAlreadyExistsError(key string) error {
 	return fmt.Errorf("set operation failed: key = %s, %s", key, kv.KeyAlreadyExistsErrorType)
 }
