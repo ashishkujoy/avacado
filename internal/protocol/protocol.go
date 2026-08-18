@@ -17,10 +17,10 @@ type ValueType byte
 
 const (
 	TypeSimpleString ValueType = '+'
-	TypeBulkString             = '$'
-	TypeNumber                 = ':'
-	TypeArray                  = '*'
-	TypeMap                    = '%'
+	TypeBulkString   ValueType = '$'
+	TypeNumber       ValueType = ':'
+	TypeArray        ValueType = '*'
+	TypeMap          ValueType = '%'
 )
 
 // MapEntry represents a key-value pair in a protocol map, preserving order

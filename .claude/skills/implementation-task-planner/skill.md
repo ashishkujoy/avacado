@@ -97,7 +97,7 @@ Generic placeholders are not acceptable — every task must be concrete enough t
 - Command: `make clean && make mocks`
 - File that will be updated: `internal/storage/<storage_type>/mock/<storage_type>.go`
 
-**Done when**: Mock file reflects the new method and `make test` passes.
+**Done when**: Mock file reflects the new method, `make test` passes, and `make lint` reports no issues.
 
 ---
 
@@ -111,7 +111,7 @@ Generic placeholders are not acceptable — every task must be concrete enough t
 - Step-by-step implementation notes from the plan (data retrieval, initialization defaults, error cases)
 - Any helper files in the same `memory/` package that need changes (e.g., `hashmap.go` alongside `hashmaps.go`)
 
-**Done when**: `make test` passes.
+**Done when**: `make test` passes and `make lint` reports no issues.
 
 ---
 
@@ -126,7 +126,7 @@ Generic placeholders are not acceptable — every task must be concrete enough t
 - File: `internal/storage/listpack/encoding.go`
 - Encoding/decoding logic described in the plan
 
-**Done when**: Encoding compiles and `make test` passes.
+**Done when**: Encoding compiles, `make test` passes, and `make lint` reports no issues.
 
 ---
 
@@ -147,7 +147,7 @@ Generic placeholders are not acceptable — every task must be concrete enough t
 - Reference: follow `internal/command/kv/get.go` for simple commands, `internal/command/hashmap/hincrby.go` for commands
   with argument validation
 
-**Done when**: File compiles and `make test` passes.
+**Done when**: File compiles, `make test` passes, and `make lint` reports no issues.
 
 ---
 
@@ -161,7 +161,7 @@ Generic placeholders are not acceptable — every task must be concrete enough t
 - Exact line to add: `registry.Register(<package>.New<Command>Parser())`
 - Where in the file to insert it (after the last registration in its storage-type group)
 
-**Done when**: `make test` passes.
+**Done when**: `make test` passes and `make lint` reports no issues.
 
 ---
 
@@ -177,7 +177,7 @@ Generic placeholders are not acceptable — every task must be concrete enough t
 - Each test case from the plan's **Testing** section as a named `func Test<CommandName>_<Scenario>` entry
 - For each test case: setup steps, the call under test, and the assertion
 
-**Done when**: `make test` passes including the new integration tests.
+**Done when**: `make test` passes including the new integration tests, and `make lint` reports no issues.
 
 ---
 

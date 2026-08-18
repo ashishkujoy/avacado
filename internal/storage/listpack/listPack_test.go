@@ -120,7 +120,7 @@ func TestListsMemoryStore_LPop(t *testing.T) {
 	assert.Equal(t, elements[0], popped[0])
 	assert.Equal(t, elements[1], popped[1])
 
-	popped = lp.LPop(3)
+	_ = lp.LPop(3)
 	//assert.Equal(t, 2, len(popped))
 	//assert.Equal(t, string(elements[2]), string(popped[0]))
 	//assert.Equal(t, elements[3], popped[1])

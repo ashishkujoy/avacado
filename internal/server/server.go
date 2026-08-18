@@ -41,7 +41,7 @@ func (s *Server) Serve(conn Connection, logger *slog.Logger) error {
 	ctx := context.WithValue(context.Background(), config.ClientConfigKey, clientConfig)
 	defer func() {
 		logger.Info("closing connection")
-		conn.Close()
+		_ = conn.Close()
 	}()
 	parser := s.protocol.CreateParser(conn)
 	for {

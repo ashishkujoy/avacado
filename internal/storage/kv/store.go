@@ -6,7 +6,7 @@ type ErrorType string
 
 const (
 	KeyAlreadyExistsErrorType ErrorType = "KEY_ALREADY_EXISTS"
-	KeyNotPresentErrorType              = "KEY_NOT_PRESENT"
+	KeyNotPresentErrorType    ErrorType = "KEY_NOT_PRESENT"
 )
 
 // SetOptions represent options supported by set command

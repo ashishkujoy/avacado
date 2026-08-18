@@ -55,7 +55,7 @@ func decodeAsBytes(buf []byte, offset int) ([]byte, int, error) {
 		}
 		return strconv.AppendInt(nil, int64(v), 10), next, nil
 	}
-	return nil, offset, unknownEncodingError
+	return nil, offset, errUnknownEncoding
 }
 
 // traverseBytes iterates over buf like traverse but delivers each element as []byte
@@ -79,8 +79,7 @@ func traverseBytes(buf []byte, fn func(elem []byte) bool) (int, error) {
 	return offset, nil
 }
 
-var unknownEncodingError = errors.New("unknown encoding")
-var unknownTypeError = errors.New("unknown type")
+var errUnknownEncoding = errors.New("unknown encoding")
 
 const endOfBuf = 0xFF
 
@@ -267,7 +266,7 @@ func decode(buf []byte, offset int) (interface{}, int, error) {
 		// 64-bit int
 		return decode64BitInt(buf, offset)
 	}
-	return nil, offset, unknownEncodingError
+	return nil, offset, errUnknownEncoding
 }
 
 // getBackLenSize calculates how many bytes are needed to encode a Length
@@ -736,7 +735,7 @@ func decode32BitStr(buf []byte, offset int) ([]byte, int, error) {
 	return result, offset, nil
 }
 
-var OutOfRangeError = errors.New("index out of range")
+var errOutOfRange = errors.New("index out of range")
 
 // getStartAndEndPositionOf find the start index and end index of the element at the given index
 func getStartAndEndPositionOf(buf []byte, index int) (int, int, error) {
@@ -744,7 +743,7 @@ func getStartAndEndPositionOf(buf []byte, index int) (int, int, error) {
 	totalElemCount := binary.BigEndian.Uint16(buf[4:6])
 
 	if index < 0 || index >= int(totalElemCount) {
-		return -1, -1, OutOfRangeError
+		return -1, -1, errOutOfRange
 	}
 
 	if totalElemCount == 0 {

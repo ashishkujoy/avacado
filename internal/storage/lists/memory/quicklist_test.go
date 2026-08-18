@@ -1,7 +1,6 @@
 package memory
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -119,11 +118,4 @@ func TestQuickList_LRange(t *testing.T) {
 	t.Run("Negative end", func(t *testing.T) {
 		assert.Equal(t, elements[2:], ql.lRange(2, -1))
 	})
-}
-
-func equalSlices(actual, expected [][]byte, t *testing.T) {
-	assert.Equal(t, len(expected), len(actual), "Actual and expected have different Length")
-	for i, actualElem := range actual {
-		assert.Equal(t, expected[i], actualElem, fmt.Sprintf("Elements differ at %d", i))
-	}
 }

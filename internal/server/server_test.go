@@ -41,7 +41,7 @@ func TestServer_HandlesErrorOnProtocolMessageParsing(t *testing.T) {
 	parser.EXPECT().Parse().Return(nil, fmt.Errorf("protocol parse error"))
 	proto.EXPECT().SerializeError(gomock.Any()).Return([]byte("-protocol parse error\r\n"))
 
-	s.Serve(connection, logger)
+	_ = s.Serve(connection, logger)
 	assert.Equal(t, "-protocol parse error\r\n", string(connection.dataWritten))
 }
 
@@ -72,7 +72,7 @@ func TestServer_HandlesErrorOnCommandParsing(t *testing.T) {
 	proto.EXPECT().SerializeError(gomock.Any()).Return([]byte("-command parse error\r\n"))
 	parser.EXPECT().Parse().Return(nil, io.EOF)
 
-	s.Serve(connection, logger)
+	_ = s.Serve(connection, logger)
 	assert.Equal(t, "-command parse error\r\n", string(connection.dataWritten))
 }
 
@@ -106,7 +106,7 @@ func TestServer_HandlesCommandExecutionError(t *testing.T) {
 	proto.EXPECT().SerializeError(gomock.Any()).Return([]byte("-command Execution fail\r\n"))
 	parser.EXPECT().Parse().Return(nil, io.EOF)
 
-	s.Serve(connection, logger)
+	_ = s.Serve(connection, logger)
 	assert.Equal(t, "-command Execution fail\r\n", string(connection.dataWritten))
 }
 
@@ -140,7 +140,7 @@ func TestServer_HandlesCommandExecutionSuccess(t *testing.T) {
 	proto.EXPECT().Serialize(gomock.Any()).Return([]byte("-command success\r\n"), nil)
 	parser.EXPECT().Parse().Return(nil, io.EOF)
 
-	s.Serve(connection, logger)
+	_ = s.Serve(connection, logger)
 	assert.Equal(t, "-command success\r\n", string(connection.dataWritten))
 }
 

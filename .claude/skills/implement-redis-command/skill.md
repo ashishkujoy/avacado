@@ -19,7 +19,7 @@ End-to-end automation for implementing a new Redis command:
 
 1. **Plan** — invoke `/redis-command-planner` to produce a detailed plan file
 2. **Create tasks** — invoke `/implementation-task-planner` on that plan to register an ordered task list
-3. **Execute** — work through each task in order, running `make test` after every task
+3. **Execute** — work through each task in order, running `make test` and `make lint` after every task
 
 ## Process
 
@@ -51,13 +51,20 @@ For each task (in the order returned by `/implementation-task-planner`):
 1. Mark the task `in_progress` with TaskUpdate.
 2. Implement exactly what the task specifies — no more, no less.
 3. Run `make test`.
-   - **Tests pass** → mark the task `completed` with TaskUpdate, move to the next task.
+   - **Tests pass** → proceed to step 4.
    - **Tests fail** →
      a. Read the failure output in full.
      b. Fix only the code introduced in this task (do not touch other tasks' files).
      c. Re-run `make test`.
-     d. Repeat until green, then mark `completed`.
+     d. Repeat until green, then proceed to step 4.
      e. If still failing after 3 fix attempts, stop and report to the user: show the exact failing test name, the error output, and what you tried.
+4. Run `make lint`.
+   - **No issues** → mark the task `completed` with TaskUpdate, move to the next task.
+   - **Issues reported** →
+     a. Fix only the code introduced in this task (do not touch other tasks' files).
+     b. Re-run `make lint`.
+     c. Repeat until clean, then mark `completed`.
+     d. If still failing after 3 fix attempts, stop and report to the user: show the exact lint output and what you tried.
 
 ### Completion Criteria
 
@@ -65,6 +72,7 @@ The command is complete when **all** of the following are true:
 
 - Every task is marked `completed`
 - `make test` is green with no failures
+- `make lint` reports no issues
 - The command appears in `internal/command/registry/registry.go`
 - At least one integration test in `integration/command/` covers the happy path
 

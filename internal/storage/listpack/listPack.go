@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-var listPackNotEnoughSizeError = errors.New("not enough space in lp")
+var errListPackNotEnoughSize = errors.New("not enough space in lp")
 
 // ListPack represents a list pack data structure used for storing small lists in memory.
 // All methods are called exclusively by the executor goroutine — no locking needed.
@@ -69,11 +69,11 @@ func (lp *ListPack) Pop() []byte {
 
 	var element []byte
 	cursor, _ := traverseReverse(lp.data[6:], lastBackLenOffset, func(elem interface{}) (bool, error) {
-		switch elem.(type) {
+		switch elem := elem.(type) {
 		case []byte:
-			element = elem.([]byte)
+			element = elem
 		case int:
-			element = []byte(fmt.Sprintf("%d", elem.(int)))
+			element = []byte(fmt.Sprintf("%d", elem))
 		}
 		return false, nil
 	})
@@ -119,11 +119,11 @@ func (lp *ListPack) LPop(count int) [][]byte {
 	elements := make([][]byte, count)
 	index := 0
 	cursor, _ := traverse(lp.data, func(elem interface{}, _, _, _ int) (bool, error) {
-		switch elem.(type) {
+		switch elem := elem.(type) {
 		case []byte:
-			elements[index] = elem.([]byte)
+			elements[index] = elem
 		case int:
-			elements[index] = []byte(fmt.Sprintf("%d", elem.(int)))
+			elements[index] = []byte(fmt.Sprintf("%d", elem))
 		}
 		index++
 		if index >= count {
@@ -160,11 +160,11 @@ func (lp *ListPack) AtIndex(i int) ([]byte, bool) {
 			r++
 			return true, nil
 		}
-		switch elem.(type) {
+		switch elem := elem.(type) {
 		case []byte:
-			element = elem.([]byte)
+			element = elem
 		case int:
-			element = []byte(fmt.Sprintf("%d", elem.(int)))
+			element = []byte(fmt.Sprintf("%d", elem))
 		}
 		return false, nil
 	})
@@ -182,11 +182,11 @@ func (lp *ListPack) IndexOf(candidate string, skipOdds bool) (int, bool) {
 			return true, nil
 		}
 		var currentElement string
-		switch elem.(type) {
+		switch elem := elem.(type) {
 		case []byte:
-			currentElement = string(elem.([]byte))
+			currentElement = string(elem)
 		case int:
-			currentElement = fmt.Sprintf("%d", elem.(int))
+			currentElement = fmt.Sprintf("%d", elem)
 		}
 		if currentElement == candidate {
 			found = true
@@ -348,7 +348,7 @@ func (lp *ListPack) PushAllOrNone(entries ...[]byte) (int, error) {
 		size += encodedSize(entry)
 	}
 	if currentLpSize+size > lp.maxSize {
-		return -1, listPackNotEnoughSizeError
+		return -1, errListPackNotEnoughSize
 	}
 	lastEntryCount := 0
 	for _, entry := range entries {

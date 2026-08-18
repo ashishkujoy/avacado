@@ -37,11 +37,15 @@ func StartNewServer(port int64) (func(), error) {
 				logger.Debug("failed to accept connection" + err.Error())
 				return
 			}
-			go s.Serve(conn, logger)
+			go func() {
+				if err := s.Serve(conn, logger); err != nil {
+					logger.Debug("connection closed with error", "error", err.Error())
+				}
+			}()
 		}
 	}()
 	<-onServerStart
 	return func() {
-		listener.Close()
+		_ = listener.Close()
 	}, nil
 }

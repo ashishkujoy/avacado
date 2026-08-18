@@ -16,8 +16,12 @@ make test            # go generate ./... (mocks) + go test -v ./...
 make test-short       # same, without -v
 make test-coverage    # generates coverage.out / coverage.html
 make mocks             # regenerate mocks only (go generate ./...)
+make lint               # run golangci-lint
 make clean              # remove coverage artifacts
 ```
+
+**Always run `make lint` after finishing an edit task** (before considering the task done) and fix any issues it
+reports.
 
 Run a single test:
 ```bash

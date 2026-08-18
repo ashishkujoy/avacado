@@ -1,6 +1,6 @@
 GOTEST := $(shell which gotest 2>/dev/null || echo go test)
 
-.PHONY: test mocks clean help
+.PHONY: test lint mocks clean help
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
@@ -26,6 +26,10 @@ test: mocks ## Generate mocks and run all tests
 
 test-short: mocks ## Generate mocks and run tests without verbose output
 	@go test ./...
+
+lint: ## Run golangci-lint
+	@echo "🔍 Running golangci-lint..."
+	@golangci-lint run ./...
 
 test-coverage: mocks ## Generate mocks and run tests with coverage report
 	@echo "🧪 Running tests with coverage..."

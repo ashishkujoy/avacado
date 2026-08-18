@@ -41,6 +41,10 @@ func main() {
 		if err != nil {
 			logger.Debug("failed to accept connection" + err.Error())
 		}
-		go s.Serve(conn, logger)
+		go func() {
+			if err := s.Serve(conn, logger); err != nil {
+				logger.Debug("connection closed with error", "error", err.Error())
+			}
+		}()
 	}
 }
