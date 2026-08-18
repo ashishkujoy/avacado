@@ -116,11 +116,13 @@ func TestKVMemoryStore_Incr(t *testing.T) {
 	assert.Equal(t, int64(1), val)
 
 	_, err = store.Set(ctx, "counter1", []byte("10"), kv.NewSetOptions())
+	assert.NoError(t, err)
 	val, err = store.Incr(ctx, "counter1")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(11), val)
 
 	_, err = store.Set(ctx, "counter2", []byte("20"), kv.NewSetOptions().WithEX(1))
+	assert.NoError(t, err)
 	pastTime := time.Now().Add(-2 * time.Second)
 	store.store["counter2"].expiry = &pastTime
 
@@ -144,11 +146,13 @@ func TestKVMemoryStore_Decr(t *testing.T) {
 	assert.Equal(t, int64(-1), val)
 
 	_, err = store.Set(ctx, "counter1", []byte("10"), kv.NewSetOptions())
+	assert.NoError(t, err)
 	val, err = store.Decr(ctx, "counter1")
 	assert.NoError(t, err)
 	assert.Equal(t, int64(9), val)
 
 	_, err = store.Set(ctx, "counter2", []byte("20"), kv.NewSetOptions().WithEX(1))
+	assert.NoError(t, err)
 	pastTime := time.Now().Add(-2 * time.Second)
 	store.store["counter2"].expiry = &pastTime
 
@@ -176,6 +180,7 @@ func TestKVMemoryStore_DecrBy(t *testing.T) {
 	assert.Equal(t, int64(-8), val)
 
 	_, err = store.Set(ctx, "counter1", []byte("100"), kv.NewSetOptions())
+	assert.NoError(t, err)
 	val, err = store.DecrBy(ctx, "counter1", 20)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(80), val)
@@ -185,6 +190,7 @@ func TestKVMemoryStore_DecrBy(t *testing.T) {
 	assert.Equal(t, int64(50), val)
 
 	_, err = store.Set(ctx, "counter2", []byte("50"), kv.NewSetOptions().WithEX(1))
+	assert.NoError(t, err)
 	pastTime := time.Now().Add(-2 * time.Second)
 	store.store["counter2"].expiry = &pastTime
 
