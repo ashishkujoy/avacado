@@ -14,7 +14,7 @@ excluded.
 | `APPEND`      | Appends a string to the value of a key                    | [X]  |
 | `STRLEN`      | Returns the length of a string value                      | [X]  |
 | `GETRANGE`    | Returns a substring of the string stored at a key         | [X]  |
-| `SETRANGE`    | Overwrites part of a string value at a given offset       | [ ]  |
+| `SETRANGE`    | Overwrites part of a string value at a given offset       | [X]  |
 | `INCRBY`      | Increments the integer value of a key by a number         | [ ]  |
 | `INCRBYFLOAT` | Increments the floating-point value of a key by a number  | [ ]  |
 | `MGET`        | Returns the string values of multiple keys                | [ ]  |

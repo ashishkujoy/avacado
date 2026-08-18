@@ -293,16 +293,16 @@ func setRange(innerValue *value, start int, newValue []byte) {
 func (k *KVMemoryStore) SetRange(
 	_ context.Context,
 	key string,
-	start int64,
+	start int,
 	value []byte,
-) (int64, error) {
+) (int, error) {
 	v, ok := k.store[key]
 	if !ok || v.isExpired() {
 		v = newValue([]byte{}, nil)
 		k.store[key] = v
 	}
-	setRange(v, int(start), value)
-	return int64(len(v.Bytes())), nil
+	setRange(v, start, value)
+	return len(v.Bytes()), nil
 }
 
 func NewKeyAlreadyExistsError(key string) error {

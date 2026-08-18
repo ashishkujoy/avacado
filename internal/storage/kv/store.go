@@ -66,4 +66,5 @@ type Store interface {
 	Append(ctx context.Context, key string, value []byte) (int64, error)
 	Len(ctx context.Context, key string) (int64, error)
 	GetRange(ctx context.Context, key string, start, end int64) ([]byte, error)
+	SetRange(ctx context.Context, key string, start int, value []byte) (int, error)
 }

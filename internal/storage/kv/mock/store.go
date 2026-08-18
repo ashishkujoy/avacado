@@ -215,3 +215,18 @@ func (mr *MockStoreMockRecorder) Set(ctx, key, value, options any) *gomock.Call 
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Set", reflect.TypeOf((*MockStore)(nil).Set), ctx, key, value, options)
 }
+
+// SetRange mocks base method.
+func (m *MockStore) SetRange(ctx context.Context, key string, start int, value []byte) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetRange", ctx, key, start, value)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetRange indicates an expected call of SetRange.
+func (mr *MockStoreMockRecorder) SetRange(ctx, key, start, value any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetRange", reflect.TypeOf((*MockStore)(nil).SetRange), ctx, key, start, value)
+}

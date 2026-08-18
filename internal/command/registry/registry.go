@@ -36,6 +36,7 @@ func SetupDefaultParserRegistry() *DefaultParserRegistry {
 	registry.Register(kv.NewExistsParser())
 	registry.Register(kv.NewAppendParser())
 	registry.Register(kv.NewStrlenParser())
+	registry.Register(kv.NewSetRangeParser())
 	getRangeParser := kv.NewGetRangeParser()
 	registry.Register(getRangeParser)
 	registry.RegisterAlias("SUBSTR", getRangeParser)
