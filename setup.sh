@@ -44,22 +44,8 @@ else
   echo "🔧 Installing golangci-lint..."
   # Pin to a fixed release (rather than "latest") and retry: the install script
   # occasionally hits a transient checksum-verify failure against GitHub's CDN.
-  GOLANGCI_LINT_VERSION="v2.12.2"
-  installed=false
-  for attempt in 1 2 3; do
-    if curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh \
-        | sh -s -- -b "$GOBIN" "$GOLANGCI_LINT_VERSION"; then
-      installed=true
-      break
-    fi
-    echo "⚠️  golangci-lint install failed (attempt ${attempt}/3), retrying..."
-    sleep 5
-  done
-  if [ "$installed" != true ]; then
-    echo "❌ Failed to install golangci-lint after 3 attempts."
-    exit 1
-  fi
-fi
+  curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.12.2
+f
 
 echo ""
 if command -v govulncheck >/dev/null 2>&1; then
