@@ -20,7 +20,14 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '1.25'
+
+    - name: Cache dev tools
+      uses: actions/cache@v4
+      with:
+        path: ~/go/bin
+        key: ${{ runner.os }}-go-tools-${{ hashFiles('setup.sh', 'go.sum') }}
+
     - name: Set up system dependencies
-      run: sudo sh setup.sh
+      run: bash setup.sh
     - name: Test
       run: make test

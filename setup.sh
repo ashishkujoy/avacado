@@ -18,6 +18,12 @@ echo "✅ go: $(go version)"
 GOBIN="$(go env GOPATH)/bin"
 export PATH="$GOBIN:$PATH"
 
+# Persist GOBIN on PATH for later steps in a GitHub Actions job (each `run:` step
+# is a fresh shell, so the `export` above only applies within this script).
+if [ -n "${GITHUB_PATH:-}" ]; then
+  echo "$GOBIN" >>"$GITHUB_PATH"
+fi
+
 echo ""
 echo "📦 Downloading Go module dependencies..."
 go mod download
