@@ -19,7 +19,8 @@ End-to-end automation for implementing a new Redis command:
 
 1. **Plan** — invoke `/redis-command-planner` to produce a detailed plan file
 2. **Create tasks** — invoke `/implementation-task-planner` on that plan to register an ordered task list
-3. **Execute** — work through each task in order, running `make test` and `make lint` after every task
+3. **Execute** — work through each task in order, running `make test` and `make lint` after every task, then
+   `make vulncheck` once all tasks are complete
 
 ## Process
 
@@ -66,6 +67,13 @@ For each task (in the order returned by `/implementation-task-planner`):
      c. Repeat until clean, then mark `completed`.
      d. If still failing after 3 fix attempts, stop and report to the user: show the exact lint output and what you tried.
 
+After the last task is marked `completed`, run `make vulncheck` once for the whole change:
+   - **No vulnerabilities** → proceed to reporting completion.
+   - **Vulnerabilities reported** →
+     a. If a flagged dependency is one this task pulled in, upgrade or replace it and re-run `make vulncheck`.
+     b. If the finding is pre-existing (unrelated to this change), stop and report it to the user rather than
+        silently proceeding — do not attempt to fix vulnerabilities outside the scope of this command.
+
 ### Completion Criteria
 
 The command is complete when **all** of the following are true:
@@ -73,6 +81,7 @@ The command is complete when **all** of the following are true:
 - Every task is marked `completed`
 - `make test` is green with no failures
 - `make lint` reports no issues
+- `make vulncheck` reports no new vulnerabilities introduced by this change
 - The command appears in `internal/command/registry/registry.go`
 - At least one integration test in `integration/command/` covers the happy path
 

@@ -1,12 +1,15 @@
 GOTEST := $(shell which gotest 2>/dev/null || echo go test)
 
-.PHONY: test lint mocks clean help
+.PHONY: setup test lint vulncheck mocks clean help
 
 help: ## Show this help message
 	@echo 'Usage: make [target]'
 	@echo ''
 	@echo 'Available targets:'
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
+
+setup: ## Install dev tools/dependencies and configure git hooks
+	@./setup.sh
 
 mocks: ## Generate all mocks
 	@echo "🔧 Generating mocks..."
@@ -30,6 +33,10 @@ test-short: mocks ## Generate mocks and run tests without verbose output
 lint: ## Run golangci-lint
 	@echo "🔍 Running golangci-lint..."
 	@golangci-lint run ./...
+
+vulncheck: ## Run govulncheck
+	@echo "🛡️  Running govulncheck..."
+	@govulncheck ./...
 
 test-coverage: mocks ## Generate mocks and run tests with coverage report
 	@echo "🧪 Running tests with coverage..."

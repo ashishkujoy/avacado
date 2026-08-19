@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -e
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+cd "$REPO_ROOT"
+
+echo "🪝 Running pre-commit checks (test, lint, vulncheck)..."
+
+echo ""
+echo "==> make test-short"
+make test-short
+
+echo ""
+echo "==> make lint"
+make lint
+
+echo ""
+echo "==> make vulncheck"
+make vulncheck
+
+echo ""
+echo "✅ Pre-commit checks passed."

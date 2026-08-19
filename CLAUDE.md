@@ -11,17 +11,23 @@ and `todo_commands.md` for what's still unimplemented).
 
 ## Commands
 
+Run `./setup.sh` (or `make setup`) once to install missing dev tools (`mockgen`, `golangci-lint`,
+`govulncheck`), download module dependencies, and configure git hooks — a `pre-commit` hook
+(`githooks/pre-commit`, wired via `git config core.hooksPath githooks`) runs `make test-short`, `make lint`,
+and `make vulncheck` on every commit.
+
 ```bash
 make test            # go generate ./... (mocks) + go test -v ./...
 make test-short       # same, without -v
 make test-coverage    # generates coverage.out / coverage.html
 make mocks             # regenerate mocks only (go generate ./...)
 make lint               # run golangci-lint
+make vulncheck           # run govulncheck
 make clean              # remove coverage artifacts
 ```
 
-**Always run `make lint` after finishing an edit task** (before considering the task done) and fix any issues it
-reports.
+**Always run `make lint` and `make vulncheck` after finishing an edit task** (before considering the task done)
+and fix any issues they report.
 
 Run a single test:
 ```bash
