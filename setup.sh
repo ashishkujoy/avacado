@@ -45,7 +45,7 @@ else
   # Pin to a fixed release (rather than "latest") and retry: the install script
   # occasionally hits a transient checksum-verify failure against GitHub's CDN.
   curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.12.2
-f
+fi
 
 echo ""
 if command -v govulncheck >/dev/null 2>&1; then
